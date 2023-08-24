@@ -12,10 +12,15 @@ dt_output = function(title, id) {
 
 example_list = c("Example A", "Example B", "Example C")
 
-load_data <- function(vals, filename) {
+load_data <- function(vals, indata, filename) {
   tryCatch(
     {
-      indata = open_indata(filename)
+      # indata = open_indata(filename)
+      indata$treatment_table = read_excel(filename, sheet = "Treatments") 
+      indata$contract_table = read_excel(filename, sheet = "Contracts") 
+      indata$global_table = read_excel(filename, sheet = "Globals") 
+      indata$treatment_description = read_excel(filename, sheet = "Treatment_fields") 
+      indata$contract_description = read_excel(filename, sheet = "Contract_fields")
     },
     error = function(e) {
       # return a safeError if a parsing error occurs
@@ -33,46 +38,62 @@ load_data <- function(vals, filename) {
   
   # vals$treatment_table <- indata$treatment_table
   # vals$contract_table <- indata$contract_table
-  vals
+  indata
 }
 
 shinyApp(
   ui = fluidPage(
     tabsetPanel(
       id = "tabset",
-      tabPanel("Input",
-        column(6,
-        selectInput("example", "Select example", example_list) ,
-        actionButton("loadexample", "Load")
-        ),
-        column(6,
-          fileInput("upload", "Choose Model input File", accept = c(".xlsx")),
-        ),
+      tabPanel("Model",
+          h1(textOutput("data_loaded", inline = TRUE)),
+          selectInput("example", "Select example model", example_list) ,
+          actionButton("loadexample", "Load"),
+          hr(), 
+          h4('Upload model file'), 
+          
+          fileInput("upload", "Choose Model input File", accept = c(".xlsx"))
+      ),
+      
+      tabPanel("Input", 
           dt_output('Treatments', 'tro'),
           dt_output('Contracts', 'cono'),
           dt_output('Globals', 'glo'),
-        downloadButton("download")
+          hr(), 
+          h4('Download modified model file'), 
+          downloadButton("download")
       ),
       
       tabPanel("Analysis", 
-         # actionButton("analysis", "Analyse"), 
          tableOutput("partial_analysis") ,
          tableOutput("summary_analysis"),
          plotOutput('costs'),
          
         verbatimTextOutput("print_tr"),
-        verbatimTextOutput("print_con"),
-        verbatimTextOutput("print_gl")
-      ),      
+        # verbatimTextOutput("print_con"),
+        # verbatimTextOutput("print_gl")
+      ),
+      tabPanel("Report", 
+               helpText(),
+               selectInput('x', 'Select form template:',
+                           choices = c("Short", "Complete")),
+               radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
+                            inline = TRUE),
+               downloadButton('downloadReport')
+      )    
     )
   ),
   server = function(input, output, session) {
     
-    vals <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL)
+    vals <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, filename = NULL)
+    indata <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, treatment_description = NULL, contract_description = NULL)
+    # indata <- NULL
+    
     
     observe({
       req(input$upload)
-      load_data(vals, input$upload$datapath)
+      indata <- load_data(vals, indata, input$upload$datapath)
+      vals$filename <- input$upload$name
     })
 
     observe({
@@ -81,11 +102,20 @@ shinyApp(
         "Example A" = "examples.xlsx",
         "Example B" = "models.xlsx"
       )
-      load_data(vals, filenames[[input$example]])
+      indata <- load_data(vals, indata, filenames[[input$example]])
+      vals$filename <- filenames[[input$example]]
+    })
+    
+    output$data_loaded <- renderText({
+      if_else(is.null(vals$filename), 
+      'No model loaded',
+      str_c('Model: ', vals$filename)
+      )
     })
     
     output$print_tr <- renderPrint({
-      vals$treatment_table
+      vals$treatment_table %>% 
+        with_titles( indata$treatment_description)
     })
     output$print_con <- renderPrint({
       vals$contract_table
@@ -95,17 +125,19 @@ shinyApp(
     })
     
     output$partial_analysis <- renderTable({
-      # req(input$analysis)
+      req(vals$filename )
       rubriker = c(Treatment = "name", Payment = "contract")
       contract_analysis(vals, show_details = TRUE) %>% 
         select(-plan) %>% rename(any_of(rubriker)) 
     })
     output$summary_analysis <- renderTable({
+      req(vals$filename )
       rubriker = c(Treatment = "name", Payment = "contract")
       contract_analysis(vals)
     })
   
     output$costs <- renderPlot({
+      req(vals$filename )
       contract_analysis(vals, over_time = TRUE)  %>% 
         rename(Contract = contract) %>% 
         ggplot() + 
@@ -120,7 +152,10 @@ shinyApp(
     dtoptions = list(paging = FALSE, ordering = FALSE, searching = FALSE, info =FALSE)
     
     # Treatments
-    output$tro = DT::renderDataTable(vals$treatment_table, selection = 'none', editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
+    output$tro = vals$treatment_table  %>% 
+      with_titles( indata$treatment_description) %>%
+      DT::renderDataTable( selection = 'none', 
+                    editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
 
     proxy_tr = dataTableProxy('tro')
     
@@ -134,7 +169,10 @@ shinyApp(
     })
     
     # Contracts
-    output$cono = DT::renderDataTable(vals$contract_table, selection = 'none', editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
+    output$cono = vals$contract_table %>% 
+      with_titles( indata$contract_description) %>%
+      DT::renderDataTable(selection = 'none', 
+                    editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
     
     proxy_con = dataTableProxy('cono')
     
@@ -148,7 +186,8 @@ shinyApp(
     })
     
     # Globals
-    output$glo = DT::renderDataTable(vals$global_table, selection = 'none', editable =list(target = 'cell', disable = list(columns = c(0))), options = dtoptions, rownames = FALSE)
+    output$glo = DT::renderDataTable(vals$global_table, selection = 'none', 
+                   editable =list(target = 'cell', disable = list(columns = c(0))), options = dtoptions, rownames = FALSE)
     
     proxy_gl = dataTableProxy('glo')
     
