@@ -45,18 +45,28 @@ shinyApp(
   ui = fluidPage(
     tabsetPanel(
       id = "tabset",
+      tabPanel("Overview",
+               includeMarkdown("overview.md")
+      ),
+      # tabPanel("Overview",
+      #   h3("ATMP payment models"),
+      #   p("Here is an intro"),
+      #   a(href="http://google.com", "Click Here!")
+      # ),
       tabPanel("Model",
-          h1(textOutput("data_loaded", inline = TRUE)),
-          selectInput("example", "Select example model", example_list) ,
-          actionButton("loadexample", "Load"),
-          hr(), 
-          h4('Upload model file'), 
-          
-          fileInput("upload", "Choose Model input File", accept = c(".xlsx"))
+               h3('Model'),
+               h4(textOutput("data_loaded", inline = TRUE)),
+               selectInput("example", "Select example model", example_list) ,
+               actionButton("loadexample", "Load"),
+               hr(), 
+               h4('Upload model file'), 
+               
+               fileInput("upload", "Choose Model input File", accept = c(".xlsx"))
       ),
       
       tabPanel("Input", 
-          dt_output('Treatments', 'tro'),
+           h3('Model Input'),
+           dt_output('Treatments', 'tro'),
           dt_output('Contracts', 'cono'),
           dt_output('Globals', 'glo'),
           hr(), 
@@ -65,15 +75,17 @@ shinyApp(
       ),
       
       tabPanel("Analysis", 
+           h3('Analysis of model'),
          tableOutput("partial_analysis") ,
          tableOutput("summary_analysis"),
          plotOutput('costs'),
          
-        verbatimTextOutput("print_tr"),
+        # verbatimTextOutput("print_tr"),
         # verbatimTextOutput("print_con"),
         # verbatimTextOutput("print_gl")
       ),
       tabPanel("Report", 
+               h3('Generate report'),
                helpText(),
                selectInput('x', 'Select form template:',
                            choices = c("Short", "Complete")),

@@ -1,0 +1,193 @@
+---
+title: "ATMP package"
+author: "Jonas Björnerstedt"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(knitr)
+library(shiny)
+library(kableExtra)
+library(flextable)
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(dplyr.summarise.inform = FALSE)
+options(knitr.kable.NA = '') # Suppress printing of NA in kable
+# Standard theme for document 
+theme_set(theme_bw()) 
+
+set_flextable_defaults(
+align = "center",
+digits = 2
+# theme_fun = theme_zebra
+  )
+
+doShiny = TRUE
+
+source("markov.R")
+
+plot_treatment_paths <- function(indata, treatment_name, reps = 8, T = 20) {
+  ex_treatment = indata$treatment_table %>% filter(name == treatment_name) %>% pmap(Treatment) %>% pluck(1)
+
+  result = c()
+  for (i in 1:reps) {
+    s = run.mc.sim(transition(ex_treatment), T = T)
+    result = cbind(result, s) 
+  }
+  matplot(matrix(create_QoL(ex_treatment)[result], ncol = reps), type='l', lty=1, col=1:5, ylim=c(0,1), ylab='QoL', xlab='year')
+  abline(h=0, lty=3)
+  abline(h=1, lty=3)
+}
+
+print_tansitions <- function(indata, treatment_name) {
+  ex_treatment = indata$treatment_table %>% 
+    filter(name == treatment_name) %>% 
+    pmap(Treatment) %>% 
+    pluck(1)
+  P = transition(ex_treatment)
+  P %>% as_tibble() %>% 
+    mutate(st = row.names(P)) %>% 
+    select(st, everything()) %>% 
+    flextable() %>% 
+    theme_box() %>% 
+    bold(j = "st") %>% 
+    set_header_labels(st = "") %>% 
+    colformat_double(digits = 2, na_str = " ") 
+}
+
+# Läs in från Excel
+# source("create_settings.R")
+exampleA = open_indata("Example_A.xlsx")
+exampleB = open_indata("Example_B.xlsx")
+exampleC = open_indata("Example_C.xlsx")
+
+```
+
+
+
+```{r}
+print_tansitions(exampleA, "ATMP") 
+
+```
+
+## Quality of life
+
+To each state, a measure of the quality of life (QoL) is associated. By default in the ATMP treatment a linear decrease in QoL from 1 (full health) to 0 (death) over the 6 states.
+
+The figure below shows a simulation of 8 individuals, with both 4 year progression and immediate transition to death. Four individuals progress from full health, and one individual dies without progression.
+
+```{r}
+set.seed(13336)
+
+plot_treatment_paths(exampleA, "ATMP") 
+```
+
+```{r}
+# TODO: remove the global_table_rnames hack. Use same syntax in markov.R
+payment_plans(exampleA) %>%
+  ggplot() + aes(time, payment) + geom_col(fill = lightblue) + facet_grid(rows = vars(payment_plan))
+```
+
+
+```{r}
+exampleA$global_table %>% flextable_output()
+```
+
+```{r}
+exampleA$treatment_table %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6), digits = 0) 
+
+```
+
+
+```{r, eval=TRUE}
+exampleA$contract_table %>% 
+  flextable_output()   
+```
+
+## Analysis of payment plan
+
+
+```{r}
+df =  contract_analysis(exampleA, show_details = TRUE) 
+```
+
+### Treatment plan outcome
+
+```{r}
+df2 = df %>% 
+  group_by(name, plan) %>% select(-contract) %>% 
+  summarise_all(~sum(.x, na.rm = TRUE)) 
+
+df2 %>% 
+  flextable_output()
+```
+
+### Comparison
+
+```{r}
+compare_results(df) %>% 
+   flextable_output()
+```
+
+## Plots over time
+
+
+```{r}
+df =  contract_analysis(exampleA, over_time = TRUE)
+```
+
+### Payments
+
+```{r}
+df %>% ggplot() + 
+  aes(time, Cost, fill = contract) + 
+  geom_col()  + facet_grid(rows = vars(name)) + labs(fill= "Payment scheme")
+```
+
+### QALY over time
+
+```{r}
+df %>% filter(!is.na(QALY)) %>% ggplot() + 
+  aes(time, QALY, color = name) + 
+  geom_line() + labs(color ="Arm")
+```
+
+# Example B
+
+
+```{r}
+print_tansitions(exampleB, "Comparison") 
+
+```
+
+```{r}
+set.seed(13336)
+plot_treatment_paths(exampleC, "ATMP 2") 
+
+```
+
+# Example C
+
+```{r}
+set.seed(13336)
+plot_treatment_paths(exampleB, "ATMP") 
+
+```
+
+Discounting 
+
+
+```{r}
+# TODO: remove the global_table_rnames hack. Use same syntax in markov.R
+x = payment_plans(exampleC) 
+x %>% bind_rows( x %>% filter(payment_plan == "Comparison") %>% mutate(payment_plan = "Comparison Forecast", payment = discounting(0.05, 20)*payment)) %>%
+  ggplot() + aes(time, payment) + geom_col(fill = lightblue) + facet_grid(rows = vars(payment_plan))
+
+```

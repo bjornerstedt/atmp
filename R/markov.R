@@ -281,6 +281,7 @@ payment_plans <- function(indata) {
     as_tibble() %>% 
     mutate(time = row_number()) %>% 
     pivot_longer(-time, names_to = "payment_plan", values_to = "payment")
+  res
 }
 
 analyse_contract <- function(con, tr, globals) {
