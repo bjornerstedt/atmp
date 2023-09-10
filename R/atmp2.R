@@ -10,7 +10,7 @@ dt_output = function(title, id) {
   ))
 }
 
-example_list = c("Example A", "Example B", "Example C")
+example_list = c("Example A", "Example B", "Example A2")
 
 load_data <- function(vals, indata, filename) {
   tryCatch(
@@ -111,8 +111,9 @@ shinyApp(
     observe({
       req(input$loadexample)
       filenames = list(
-        "Example A" = "examples.xlsx",
-        "Example B" = "models.xlsx"
+        "Example A" = "Example_A.xlsx",
+        "Example A2" = "Example_A2.xlsx",
+        "Example B" = "Example_B.xlsx"
       )
       indata <- load_data(vals, indata, filenames[[input$example]])
       vals$filename <- filenames[[input$example]]
@@ -139,8 +140,9 @@ shinyApp(
     output$partial_analysis <- renderTable({
       req(vals$filename )
       rubriker = c(Treatment = "name", Payment = "contract")
-      contract_analysis(vals, show_details = TRUE) %>% 
-        select(-plan) %>% rename(any_of(rubriker)) 
+      contract_analysis(vals, show_details = TRUE) 
+      # %>% 
+      #   select(-plan) # %>% rename(any_of(rubriker)) 
     })
     output$summary_analysis <- renderTable({
       req(vals$filename )

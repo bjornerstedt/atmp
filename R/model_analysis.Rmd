@@ -77,15 +77,12 @@ print_tansitions(exampleA, "ATMP")
 
 ## Quality of life
 
-To each state, a measure of the quality of life (QoL) is associated. By default in the ATMP treatment a linear decrease in QoL from 1 (full health) to 0 (death) over the 6 states.
-
-The figure below shows a simulation of 8 individuals, with both 4 year progression and immediate transition to death. Four individuals progress from full health, and one individual dies without progression.
-
 ```{r}
 set.seed(13336)
 
 plot_treatment_paths(exampleA, "ATMP") 
 ```
+## Payment plans
 
 ```{r}
 # TODO: remove the global_table_rnames hack. Use same syntax in markov.R
@@ -163,21 +160,39 @@ df %>% filter(!is.na(QALY)) %>% ggplot() +
 
 
 ```{r}
-print_tansitions(exampleB, "Comparison") 
+print_tansitions(exampleB, "ATMP") 
+
+```
+
+```{r}
+set.seed(13336)
+plot_treatment_paths(exampleB, "ATMP") 
+
+```
+```{r}
+df =  contract_analysis(exampleB, over_time = TRUE)
+```
+
+### Payments
+
+```{r}
+df %>% ggplot() + 
+  aes(time, Cost, fill = contract) + 
+  geom_col()  + facet_grid(rows = vars(name)) + labs(fill= "Payment scheme")
+```
+
+# Example C
+
+
+```{r}
+set.seed(13336)
+plot_treatment_paths(exampleC, "ATMP") 
 
 ```
 
 ```{r}
 set.seed(13336)
 plot_treatment_paths(exampleC, "ATMP 2") 
-
-```
-
-# Example C
-
-```{r}
-set.seed(13336)
-plot_treatment_paths(exampleB, "ATMP") 
 
 ```
 

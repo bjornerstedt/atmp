@@ -1,14 +1,17 @@
 library(tidyverse)
 
 open_indata <- function(infile) {
-  list(
+  indata = list(
     treatment_table = read_excel(infile, sheet = "Treatments") ,
     contract_table = read_excel(infile, sheet = "Contracts") ,
     global_table = read_excel(infile, sheet = "Globals") ,
     treatment_description = read_excel(infile, sheet = "Treatment_fields") ,
-    contract_description = read_excel(infile, sheet = "Contract_fields"),
-    state_table = read_excel(infile, sheet = "States")
+    contract_description = read_excel(infile, sheet = "Contract_fields")
   )
+  if ("States" %in% excel_sheets(infile)) {
+      indata$state_table = read_excel(infile, sheet = "States")
+  }
+  indata
 }
 
 # qcol = "QoL"
@@ -209,7 +212,7 @@ transition <- function(tr) {
     P[tr$random_state2, tr$random_state2 + 1] = tr$p_HU2
     P[tr$random_state2, tr$health_states] = tr$p_HD
   }
-  rownames(P) = colnames(P) = c("H", sprintf("U%d", 1:(tr$health_states - 2)), "D")
+  rownames(P) = colnames(P) = c("PF", sprintf("P%d", 1:(tr$health_states - 2)), "D")
   P
 }
 

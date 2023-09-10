@@ -4,14 +4,16 @@ output: md_document
 
 ## Overview
 
-Here is an overview 
+Welcome to the ATMP app, for interactive analysis of payment plans for ATMP treatments. For an introduction to the health models read [the documentation]() and check the interactive [presentation of the example models](model_analysis.Rmd).
 
-[Here is a complete description](google.com) of the ATMP app. At the top of the screen there are five tabs as illustrated in the figure below.
+At the top of the screen there are five tabs:
 
-![](tabs.png){width="50%"}
+1.  *Overview* - The current tab
+2.  *Model* - Select health model
+3.  *Input* - See/modify the input values of the model
+4.  *Analysis* - Analysis of the health model
+5.  *Report* - Download a report of the analysis
 
-1. _Overview_ - The current tab
-1. _Model_ - Select health model
-1. _Input_ - See/modify the input values of the model
-1. _Analysis_ - Analysis of the health model
-1. _Report_ - Download a report of the analysis
+The starting point of the analysis is a _health model_; tables of input values specified in an Excel sheet. Selecting the _Model_ tab displays a page where you select the health model to analyse.
+
+Once loaded, values can be modified under the _Input_ tab, with results displayed in the _Analysis_ tab.
