@@ -53,7 +53,7 @@ plan, name, p_HU, p_HD, p_UD, health_states
 
 contract_table = read_csv("
 plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end
-1, ATMP payment,10,0,        10,0,             0, 1,2
+1, ATMP,10,0,        10,0,             0, 1,2
 0, Comparison,0,0.5,            0,0,             0,1,6
 ") %>% 
   select(-refund, -start, -initial_payment)
@@ -81,10 +81,29 @@ models = list(
 write_xlsx(models, "Example_A.xlsx")
 
 #
+# -------------- EXAMPLE B ---------------------------
+# Cost saving ATMP
+
+models$Treatments = read_csv("
+plan, name, p_HU, p_HD, p_UD, health_states, QoL_start, QoL_end
+1, ATMP,              0.03, 0.01, 0.02, 6,     0.9, 0.7
+0, Comparison,        0.98, 0.02, 0.02,    6,    0.7, 0.7
+") # %>% select(-QoL_start, -QoL_end)
+
+models$Contracts = read_csv("
+plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end, cost_trend
+1, ATMP,            10,0,      10,0,             0, 1,2, 0
+1, Failure treat. w trend , 0,0.5,      0,0,             0, 2,6, 0.05
+0, Comparison w trend,      0,0.5,      0,0,             0, 1,6, 0.05
+") %>% select(-cost_trend)
+
+write_xlsx(models, "Example_B.xlsx")
+
+#
 # -------------- EXAMPLE A2 ---------------------------
 # More complex payment schemes
 
-models$global_table = read_csv("
+models$Globals = read_csv("
 name, value
 discount, 0.03
 firm_discount, 0.03
@@ -99,38 +118,19 @@ control_plan, 0
 models$Treatments = read_csv("
 plan, name, p_HU, p_HD, p_UD, health_states
 1, ATMP,              0.04, 0.01, 0.02, 6
-1, ATMP Certain,      0, 0.01, 0, 6
+1, ATMP Certain,      0, 0.01, 0.02, 6
 0, Comparison,        1,    0.01, 0.02, 6
 ") 
 
 models$Contracts = read_csv("
 plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end
-1, ATMP payment,10,0,        10,0,             0, 1,2
+1, ATMP,10,0,        10,0,             0, 1,2
 1, Hospital,0.5,0,           1,0,           0,1,6
 1, Failure treatment,0,0.5,      0,0,             0,2,6
 0, Comparison,0,0.5,            0,0,             0,1,6
 ")
 
 write_xlsx(models, "Example_A2.xlsx")
-
-#
-# -------------- EXAMPLE B ---------------------------
-# Cost saving ATMP
-
-models$Treatments = read_csv("
-plan, name, p_HU, p_HD, p_UD, health_states, QoL_start, QoL_end
-1, ATMP,              0.04, 0.01, 0.02, 4,     0.9, 0.7
-0, Comparison,        0.98, 0.02, 0.02,    4,    0.7, 0.7
-") 
-
-models$Contracts = read_csv("
-plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end, cost_trend
-1, ATMP payment,10,0,        10,0,             0, 1,2, 0
-1, Failure treat. w trend ,0,0.5,      0,0,             0,2,6, 0.05
-0, Comparison w trend,0,0.5,            0,0,             0,1,6, 0.05
-")
-
-write_xlsx(models, "Example_B.xlsx")
 
 #
 # -------------- EXAMPLE C ---------------------------

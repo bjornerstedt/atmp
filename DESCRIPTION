@@ -17,4 +17,5 @@ Imports:
     pkgload,
     purrr,
     shiny,
-    tidyr
+    tidyr,
+    writexl

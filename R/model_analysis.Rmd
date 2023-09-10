@@ -31,81 +31,65 @@ doShiny = TRUE
 
 source("markov.R")
 
-plot_treatment_paths <- function(indata, treatment_name, reps = 8, T = 20) {
-  ex_treatment = indata$treatment_table %>% filter(name == treatment_name) %>% pmap(Treatment) %>% pluck(1)
-
-  result = c()
-  for (i in 1:reps) {
-    s = run.mc.sim(transition(ex_treatment), T = T)
-    result = cbind(result, s) 
-  }
-  matplot(matrix(create_QoL(ex_treatment)[result], ncol = reps), type='l', lty=1, col=1:5, ylim=c(0,1), ylab='QoL', xlab='year')
-  abline(h=0, lty=3)
-  abline(h=1, lty=3)
-}
-
-print_tansitions <- function(indata, treatment_name) {
-  ex_treatment = indata$treatment_table %>% 
-    filter(name == treatment_name) %>% 
-    pmap(Treatment) %>% 
-    pluck(1)
-  P = transition(ex_treatment)
-  P %>% as_tibble() %>% 
-    mutate(st = row.names(P)) %>% 
-    select(st, everything()) %>% 
-    flextable() %>% 
-    theme_box() %>% 
-    bold(j = "st") %>% 
-    set_header_labels(st = "") %>% 
-    colformat_double(digits = 2, na_str = " ") 
-}
 
 # Läs in från Excel
 # source("create_settings.R")
 exampleA = open_indata("Example_A.xlsx")
 exampleB = open_indata("Example_B.xlsx")
+exampleA2 = open_indata("Example_A2.xlsx")
 exampleC = open_indata("Example_C.xlsx")
 
 ```
 
 
+# Example A
 
 ```{r}
-print_tansitions(exampleA, "ATMP") 
-
+plot_QoL(exampleA)
 ```
 
-## Quality of life
+Health outcomes for ATMP treatment
 
 ```{r}
 set.seed(13336)
 
 plot_treatment_paths(exampleA, "ATMP") 
 ```
-## Payment plans
+
+
 
 ```{r}
-# TODO: remove the global_table_rnames hack. Use same syntax in markov.R
-payment_plans(exampleA) %>%
-  ggplot() + aes(time, payment) + geom_col(fill = lightblue) + facet_grid(rows = vars(payment_plan))
+plot_payment_plans(exampleA)
 ```
 
+### Tables
 
 ```{r}
-exampleA$global_table %>% flextable_output()
+global_table <- function(indata) {
+  indata$global_table %>% flextable_output()
+}
+global_table(exampleA)
 ```
 
 ```{r}
-exampleA$treatment_table %>% 
-  flextable_output() %>% 
+treatment_table <- function(indata) {
+indata$treatment_table  %>% 
+        with_titles( indata$treatment_description) %>% 
+  flextable_output() 
+}
+treatment_table(exampleA) %>% 
   colformat_double(j = c(1,6), digits = 0) 
-
 ```
 
 
 ```{r, eval=TRUE}
-exampleA$contract_table %>% 
-  flextable_output()   
+contract_table <- function(indata) {
+indata$contract_table  %>% 
+        with_titles( indata$contract_description) %>% 
+  flextable_output() 
+}
+contract_table(exampleA) %>% 
+  colformat_double(j = c(1,5,6), digits = 0) 
 ```
 
 ## Analysis of payment plan
@@ -115,18 +99,15 @@ exampleA$contract_table %>%
 df =  contract_analysis(exampleA, show_details = TRUE) 
 ```
 
-### Treatment plan outcome
 
 ```{r}
 df2 = df %>% 
-  group_by(name, plan) %>% select(-contract) %>% 
+  group_by(name, plan) %>% select(-contract) %>% rename(Arm = plan) %>% 
   summarise_all(~sum(.x, na.rm = TRUE)) 
 
 df2 %>% 
   flextable_output()
 ```
-
-### Comparison
 
 ```{r}
 compare_results(df) %>% 
@@ -137,72 +118,83 @@ compare_results(df) %>%
 
 
 ```{r}
-df =  contract_analysis(exampleA, over_time = TRUE)
+
+plot_payments(exampleA)
 ```
 
-### Payments
-
 ```{r}
-df %>% ggplot() + 
-  aes(time, Cost, fill = contract) + 
-  geom_col()  + facet_grid(rows = vars(name)) + labs(fill= "Payment scheme")
+plot_QALY(exampleA)
 ```
 
-### QALY over time
+# Example A2
 
 ```{r}
-df %>% filter(!is.na(QALY)) %>% ggplot() + 
-  aes(time, QALY, color = name) + 
-  geom_line() + labs(color ="Arm")
-```
-
-# Example B
-
-
-```{r}
-print_tansitions(exampleB, "ATMP") 
-
+plot_QoL(exampleA2)
 ```
 
 ```{r}
 set.seed(13336)
-plot_treatment_paths(exampleB, "ATMP") 
 
-```
-```{r}
-df =  contract_analysis(exampleB, over_time = TRUE)
+plot_treatment_paths(exampleA2, "ATMP") 
 ```
 
-### Payments
-
-```{r}
-df %>% ggplot() + 
-  aes(time, Cost, fill = contract) + 
-  geom_col()  + facet_grid(rows = vars(name)) + labs(fill= "Payment scheme")
-```
-
-# Example C
 
 
 ```{r}
-set.seed(13336)
-plot_treatment_paths(exampleC, "ATMP") 
+plot_payment_plans(exampleA2)
+```
 
+### Tables
+
+```{r}
+exampleA2$global_table %>% flextable_output()
 ```
 
 ```{r}
-set.seed(13336)
-plot_treatment_paths(exampleC, "ATMP 2") 
+exampleA2$treatment_table %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6), digits = 0) 
 
 ```
 
-Discounting 
+
+```{r, eval=TRUE}
+exampleA2$contract_table %>% 
+  flextable_output()   
+```
+
+## Analysis of payment plan
 
 
 ```{r}
-# TODO: remove the global_table_rnames hack. Use same syntax in markov.R
-x = payment_plans(exampleC) 
-x %>% bind_rows( x %>% filter(payment_plan == "Comparison") %>% mutate(payment_plan = "Comparison Forecast", payment = discounting(0.05, 20)*payment)) %>%
-  ggplot() + aes(time, payment) + geom_col(fill = lightblue) + facet_grid(rows = vars(payment_plan))
-
+df =  contract_analysis(exampleA2, show_details = TRUE) 
 ```
+
+
+```{r}
+df2 = df %>% 
+  group_by(name, plan) %>% select(-contract) %>% 
+  summarise_all(~sum(.x, na.rm = TRUE)) 
+
+df2 %>% 
+  flextable_output()
+```
+
+```{r}
+compare_results(df) %>% 
+   flextable_output()
+```
+
+## Plots over time
+
+
+```{r}
+
+plot_payments(exampleA2)
+```
+
+```{r}
+plot_QALY(exampleA2)
+```
+
+

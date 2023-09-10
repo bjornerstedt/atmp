@@ -35,6 +35,77 @@ with_titles <- function(df, df_desc) {
   rename(df, any_of(namelist))
 }
 
+plot_QoL <- function(health_analysis) {
+  
+  QoL_table <- function(tr) {
+    tibble(name = tr$name, state = 1:tr$health_states, QoL = create_QoL(tr))
+  }
+  
+  ex_treatment = health_analysis$treatment_table %>% 
+    pmap(Treatment) %>% map(QoL_table) %>% bind_rows()
+  ex_treatment %>% ggplot() +
+    aes(state, QoL) + 
+    # geom_col(fill = lightblue) + 
+    geom_point() + geom_line() +
+    facet_grid(rows = vars(name)) +
+    labs(title = "QoL of health states")
+}
+
+plot_treatment_paths <- function(indata, treatment_name, reps = 8, T = 20) {
+  ex_treatment = indata$treatment_table %>% 
+    filter(name == treatment_name) %>% 
+    pmap(Treatment) %>% pluck(1)
+  
+  result = c()
+  for (i in 1:reps) {
+    s = run.mc.sim(transition(ex_treatment), T = T)
+    result = cbind(result, s) 
+  }
+  matplot(matrix(create_QoL(ex_treatment)[result], ncol = reps), main="Sample health outcomes",
+          type='l', lty=1, col=1:5, ylim=c(0,1), ylab='QoL', xlab='year')
+  abline(h=0, lty=3)
+  abline(h=1, lty=3)
+}
+
+print_tansitions <- function(indata, treatment_name) {
+  ex_treatment = indata$treatment_table %>% 
+    filter(name == treatment_name) %>% 
+    pmap(Treatment) %>% 
+    pluck(1)
+  P = transition(ex_treatment)
+  P %>% as_tibble() %>% 
+    mutate(st = row.names(P)) %>% 
+    select(st, everything()) %>% 
+    flextable() %>% 
+    theme_box() %>% 
+    bold(j = "st") %>% 
+    set_header_labels(st = "") %>% 
+    colformat_double(digits = 2, na_str = " ") 
+}
+
+plot_payment_plans <- function(indata) {
+  payment_plans(indata) %>%
+    ggplot() + aes(time, payment) + 
+    geom_col(fill = lightblue) + 
+    facet_grid(rows = vars(payment_plan)) + 
+    labs(title = "Payment plans")
+}
+
+plot_payments <- function(indata) {
+  contract_analysis(indata, over_time = TRUE) %>% 
+    ggplot() + 
+    aes(time, Cost, fill = contract) + 
+    geom_col()  + facet_grid(rows = vars(name)) + 
+    labs(fill= "Arm", title = "Costs over time")
+}
+
+plot_QALY <- function(indata) {
+  contract_analysis(indata, over_time = TRUE) %>% 
+    filter(!is.na(QALY)) %>% ggplot() + 
+    aes(time, QALY, color = name) + 
+    geom_line() + labs(color ="Arm", title = "QALY over time")
+}
+
 discounting = function(ir, max_year) {
   year = 1:max_year
   ret = 1/(1 + ir)^(year-1)

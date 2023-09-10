@@ -1,7 +1,7 @@
 library(tidyverse)
 library(shiny)
 library(DT)
-
+library(writexl)
 
 dt_output = function(title, id) {
   fluidRow(column(
@@ -54,14 +54,20 @@ shinyApp(
       #   a(href="http://google.com", "Click Here!")
       # ),
       tabPanel("Model",
-               h3('Model'),
-               h4(textOutput("data_loaded", inline = TRUE)),
-               selectInput("example", "Select example model", example_list) ,
-               actionButton("loadexample", "Load"),
-               hr(), 
-               h4('Upload model file'), 
-               
-               fileInput("upload", "Choose Model input File", accept = c(".xlsx"))
+        h3('Model'),
+        h4(textOutput("data_loaded", inline = TRUE)),
+        column(6,
+        selectInput("example", "Select example model", example_list) ,
+        actionButton("loadexample", "Load")
+        ),
+        column(6,
+        fileInput("upload", "Choose Model input File", accept = c(".xlsx")),
+        ),
+        column(12,
+               hr()
+        ),
+        column(6,plotOutput('QoL')),
+        column(6,plotOutput('payment_plans')),
       ),
       
       tabPanel("Input", 
@@ -78,7 +84,10 @@ shinyApp(
            h3('Analysis of model'),
          tableOutput("partial_analysis") ,
          tableOutput("summary_analysis"),
-         plotOutput('costs'),
+         hr(),
+         h4('Plots over time'),
+         column(6, plotOutput('costs')),
+         column(6, plotOutput('QALY')),
          
         # verbatimTextOutput("print_tr"),
         # verbatimTextOutput("print_con"),
@@ -96,6 +105,7 @@ shinyApp(
     )
   ),
   server = function(input, output, session) {
+    theme_set(theme_bw()) 
     
     vals <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, filename = NULL)
     indata <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, treatment_description = NULL, contract_description = NULL)
@@ -116,6 +126,7 @@ shinyApp(
         "Example B" = "Example_B.xlsx"
       )
       indata <- load_data(vals, indata, filenames[[input$example]])
+
       vals$filename <- filenames[[input$example]]
     })
     
@@ -150,14 +161,24 @@ shinyApp(
       contract_analysis(vals)
     })
   
+    output$QoL <- renderPlot({
+      req(vals$filename )
+      plot_QoL(vals)
+    })
+    
+    output$payment_plans <- renderPlot({
+      req(vals$filename )
+      plot_payment_plans(vals)
+    })
+    
     output$costs <- renderPlot({
       req(vals$filename )
-      contract_analysis(vals, over_time = TRUE)  %>% 
-        rename(Contract = contract) %>% 
-        ggplot() + 
-        aes(time, Cost, fill = Contract) + 
-        geom_col()  + facet_grid(rows = vars(name)) +
-        labs(title = "Costs over time", x = "")
+      plot_payments(vals)
+    })
+    
+    output$QALY <- renderPlot({
+      req(vals$filename )
+      plot_QALY(vals)
     })
     
     
@@ -216,11 +237,15 @@ shinyApp(
     
     # DOWNLOAD
         
-    output$download <- downloadHandler("example.csv", 
-                                       content = function(file){
-                                         write.csv(vals$treatment_table, file, row.names = F)
+    output$download <- downloadHandler(vals$filename, 
+                                       content = function(file) {
+                                         indata$treatment_table = vals$treatment_table 
+                                         indata$contract_table = vals$contract_table 
+                                         indata$global_table = vals$global_table 
+                                         write_xlsx(indata, file)
                                        },
-                                       contentType = "text/csv")
+                                       contentType="application/xlsx" 
+                                       )
     
   }
 )
