@@ -197,4 +197,85 @@ plot_payments(exampleA2)
 plot_QALY(exampleA2)
 ```
 
+# Example B
+
+```{r}
+exampleB = open_indata("Example_B.xlsx")
+print_tansitions(exampleB, "ATMP")
+```
+
+
+```{r}
+print_tansitions(exampleB, "Comparison")
+```
+
+```{r}
+plot_QoL(exampleB)
+```
+
+```{r}
+set.seed(13336)
+
+plot_treatment_paths(exampleB, "ATMP") 
+```
+
+
+
+```{r}
+plot_payment_plans(exampleB)
+```
+
+### Tables
+
+```{r}
+exampleB$global_table %>% flextable_output()
+```
+
+```{r}
+exampleB$treatment_table %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6), digits = 0) 
+
+```
+
+
+```{r, eval=TRUE}
+exampleB$contract_table %>% 
+  flextable_output()   
+```
+
+## Analysis of payment plan
+
+
+```{r}
+df =  contract_analysis(exampleB, show_details = TRUE) 
+```
+
+
+```{r}
+df2 = df %>% 
+  group_by(name, plan) %>% select(-contract) %>% 
+  summarise_all(~sum(.x, na.rm = TRUE)) 
+
+df2 %>% 
+  flextable_output()
+```
+
+```{r}
+compare_results(df) %>% 
+   flextable_output()
+```
+
+## Plots over time
+
+
+```{r}
+
+plot_payments(exampleB)
+```
+
+```{r}
+plot_QALY(exampleB)
+```
+
 

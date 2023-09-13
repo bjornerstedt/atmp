@@ -2,6 +2,9 @@ library(tidyverse)
 library(shiny)
 library(DT)
 library(writexl)
+library(readxl)
+
+source("atmp.R")
 
 dt_output = function(title, id) {
   fluidRow(column(
@@ -11,35 +14,6 @@ dt_output = function(title, id) {
 }
 
 example_list = c("Example A", "Example B", "Example A2")
-
-load_data <- function(vals, indata, filename) {
-  tryCatch(
-    {
-      # indata = open_indata(filename)
-      indata$treatment_table = read_excel(filename, sheet = "Treatments") 
-      indata$contract_table = read_excel(filename, sheet = "Contracts") 
-      indata$global_table = read_excel(filename, sheet = "Globals") 
-      indata$treatment_description = read_excel(filename, sheet = "Treatment_fields") 
-      indata$contract_description = read_excel(filename, sheet = "Contract_fields")
-    },
-    error = function(e) {
-      # return a safeError if a parsing error occurs
-      stop(safeError(e))
-    }
-  )
-  # Reactive values updated from treatment_table
-  # vals$treatment_table <- read_excel(filename, sheet = "Treatments", col_types = 'text') 
-  # vals$contract_table <- read_excel(filename, sheet = "Contracts", col_types = 'text') 
-  
-  # DT::coerceValue wants a data.frame
-  vals$treatment_table <- as.data.frame( read_excel(filename, sheet = "Treatments"))
-  vals$contract_table <- as.data.frame(read_excel(filename, sheet = "Contracts"))
-  vals$global_table <- as.data.frame(read_excel(filename, sheet = "Globals"))
-  
-  # vals$treatment_table <- indata$treatment_table
-  # vals$contract_table <- indata$contract_table
-  indata
-}
 
 shinyApp(
   ui = fluidPage(
@@ -188,9 +162,9 @@ shinyApp(
     dtoptions = list(paging = FALSE, ordering = FALSE, searching = FALSE, info =FALSE)
     
     # Treatments
-    output$tro = vals$treatment_table  %>% 
-      with_titles( indata$treatment_description) %>%
-      DT::renderDataTable( selection = 'none', 
+    output$tro =  
+      # with_titles( indata$treatment_description) %>%
+      DT::renderDataTable( vals$treatment_table, selection = 'none', colnames=get_titles(vals$treatment_table, indata$treatment_description), 
                     editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
 
     proxy_tr = dataTableProxy('tro')
@@ -205,9 +179,10 @@ shinyApp(
     })
     
     # Contracts
-    output$cono = vals$contract_table %>% 
-      with_titles( indata$contract_description) %>%
-      DT::renderDataTable(selection = 'none', 
+    output$cono = 
+      # vals$contract_table %>% 
+      # with_titles( indata$contract_description) %>%
+      DT::renderDataTable(vals$contract_table , selection = 'none', 
                     editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
     
     proxy_con = dataTableProxy('cono')
@@ -223,6 +198,7 @@ shinyApp(
     
     # Globals
     output$glo = DT::renderDataTable(vals$global_table, selection = 'none', 
+                                     # rownames=left_join(vals$global_table, indata$global_description) %>% pull(title),
                    editable =list(target = 'cell', disable = list(columns = c(0))), options = dtoptions, rownames = FALSE)
     
     proxy_gl = dataTableProxy('glo')
@@ -250,3 +226,4 @@ shinyApp(
     
   }
 )
+

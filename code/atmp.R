@@ -1,5 +1,35 @@
 library(tidyverse)
 
+load_data <- function(vals, indata, filename) {
+  tryCatch(
+    {
+      # indata = open_indata(filename)
+      indata$treatment_table = read_excel(filename, sheet = "Treatments") 
+      indata$contract_table = read_excel(filename, sheet = "Contracts") 
+      indata$global_table = read_excel(filename, sheet = "Globals") 
+      indata$treatment_description = read_excel(filename, sheet = "Treatment_fields") 
+      indata$contract_description = read_excel(filename, sheet = "Contract_fields")
+      indata$global_description = read_excel(filename, sheet = "Global_fields")
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  # Reactive values updated from treatment_table
+  # vals$treatment_table <- read_excel(filename, sheet = "Treatments", col_types = 'text') 
+  # vals$contract_table <- read_excel(filename, sheet = "Contracts", col_types = 'text') 
+  
+  # DT::coerceValue wants a data.frame
+  vals$treatment_table <- as.data.frame( read_excel(filename, sheet = "Treatments"))
+  vals$contract_table <- as.data.frame(read_excel(filename, sheet = "Contracts"))
+  vals$global_table <- as.data.frame(read_excel(filename, sheet = "Globals"))
+  
+  # vals$treatment_table <- indata$treatment_table
+  # vals$contract_table <- indata$contract_table
+  indata
+}
+
 open_indata <- function(infile) {
   indata = list(
     treatment_table = read_excel(infile, sheet = "Treatments") ,
@@ -8,8 +38,9 @@ open_indata <- function(infile) {
     treatment_description = read_excel(infile, sheet = "Treatment_fields") ,
     contract_description = read_excel(infile, sheet = "Contract_fields")
   )
-  if ("States" %in% excel_sheets(infile)) {
-      indata$state_table = read_excel(infile, sheet = "States")
+  if ("Global_fields" %in% excel_sheets(infile)) {
+    indata$global_description = read_excel(infile, sheet = "Global_fields")
+      # indata$state_table = read_excel(infile, sheet = "States")
   }
   indata
 }
@@ -33,6 +64,10 @@ flextable_output <- function(df) {
 with_titles <- function(df, df_desc) {
   namelist = df_desc %>% select(title, name) %>% deframe()
   rename(df, any_of(namelist))
+}
+
+get_titles <- function(df, df_desc) {
+  tibble(name =  df %>% names()) %>% left_join(df_desc, by = join_by(name)) %>% pull(title)
 }
 
 plot_QoL <- function(health_analysis) {
@@ -341,8 +376,9 @@ payment_plan <- function(con, globals) {
     costs[1:T] = con$cont_payment *
       discounting(con$cost_trend, T) 
   }
-  costs / # Future payments increase due to firm_discount
-    discounting(globals$firm_discount, T) *
+  # Future payments increase due to firm_discount, decrease with HA discount
+  costs / 
+    discounting(globals$firm_discount, T)  *
     discounting(globals$discount, T) 
 }
 
@@ -375,9 +411,8 @@ analyse_contract <- function(con, tr, globals) {
  
   failing = states[, con$end] # end is in the next period
   
-  # Costs are only defined for contract length
+  # Costs are only defined for contract length, discounted for both firm and HA
   costs = payment_plan(con, globals)
-  # costs = costs * discounting(globals$discount, globals$time_horizon)
 
   cumcosts = lag(cumsum(costs))
   if (con$contract_length < globals$time_horizon) {

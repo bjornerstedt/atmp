@@ -1,0 +1,280 @@
+---
+title: "ATMP package"
+author: "Jonas Björnerstedt"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(knitr)
+library(shiny)
+library(kableExtra)
+library(flextable)
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(dplyr.summarise.inform = FALSE)
+options(knitr.kable.NA = '') # Suppress printing of NA in kable
+# Standard theme for document 
+theme_set(theme_bw()) 
+
+set_flextable_defaults(
+align = "center",
+digits = 2
+# theme_fun = theme_zebra
+  )
+
+doShiny = TRUE
+
+source("atmp.R")
+
+
+# Läs in från Excel
+# source("create_settings.R")
+exampleA = open_indata("Example_A.xlsx")
+exampleB = open_indata("Example_B.xlsx")
+exampleA2 = open_indata("Example_A2.xlsx")
+
+```
+
+
+# Example A
+
+```{r}
+plot_QoL(exampleA)
+```
+
+Health outcomes for ATMP treatment
+
+```{r}
+set.seed(13336)
+
+plot_treatment_paths(exampleA, "ATMP") 
+```
+
+
+
+```{r}
+plot_payment_plans(exampleA)
+```
+
+### Tables
+
+```{r}
+global_table <- function(indata) {
+  indata$global_table %>% flextable_output()
+}
+global_table(exampleA)
+```
+
+```{r}
+treatment_table <- function(indata) {
+indata$treatment_table  %>% 
+        with_titles( indata$treatment_description) %>% 
+  flextable_output() 
+}
+treatment_table(exampleA) %>% 
+  colformat_double(j = c(1,6), digits = 0) 
+```
+
+
+```{r, eval=TRUE}
+contract_table <- function(indata) {
+indata$contract_table  %>% 
+        with_titles( indata$contract_description) %>% 
+  flextable_output() 
+}
+contract_table(exampleA) %>% 
+  colformat_double(j = c(1,5,6), digits = 0) 
+```
+
+## Analysis of payment plan
+
+
+```{r}
+df =  contract_analysis(exampleA, show_details = TRUE) 
+```
+
+
+```{r}
+df2 = df %>% 
+  group_by(name, plan) %>% select(-contract) %>% rename(Arm = plan) %>% 
+  summarise_all(~sum(.x, na.rm = TRUE)) 
+
+df2 %>% 
+  flextable_output()
+```
+
+```{r}
+compare_results(df) %>% 
+   flextable_output()
+```
+
+## Plots over time
+
+
+```{r}
+
+plot_payments(exampleA)
+```
+
+```{r}
+plot_QALY(exampleA)
+```
+
+# Example A2
+
+```{r}
+plot_QoL(exampleA2)
+```
+
+```{r}
+set.seed(13336)
+
+plot_treatment_paths(exampleA2, "ATMP") 
+```
+
+
+
+```{r}
+plot_payment_plans(exampleA2)
+```
+
+### Tables
+
+```{r}
+exampleA2$global_table %>% flextable_output()
+```
+
+```{r}
+exampleA2$treatment_table %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6), digits = 0) 
+
+```
+
+
+```{r, eval=TRUE}
+exampleA2$contract_table %>% 
+  flextable_output()   
+```
+
+## Analysis of payment plan
+
+
+```{r}
+df =  contract_analysis(exampleA2, show_details = TRUE) 
+```
+
+
+```{r}
+df2 = df %>% 
+  group_by(name, plan) %>% select(-contract) %>% 
+  summarise_all(~sum(.x, na.rm = TRUE)) 
+
+df2 %>% 
+  flextable_output()
+```
+
+```{r}
+compare_results(df) %>% 
+   flextable_output()
+```
+
+## Plots over time
+
+
+```{r}
+
+plot_payments(exampleA2)
+```
+
+```{r}
+plot_QALY(exampleA2)
+```
+
+# Example B
+
+```{r}
+exampleB = open_indata("Example_B.xlsx")
+print_tansitions(exampleB, "ATMP")
+```
+
+
+```{r}
+print_tansitions(exampleB, "Comparison")
+```
+
+```{r}
+plot_QoL(exampleB)
+```
+
+```{r}
+set.seed(13336)
+
+plot_treatment_paths(exampleB, "ATMP") 
+```
+
+
+
+```{r}
+plot_payment_plans(exampleB)
+```
+
+### Tables
+
+```{r}
+exampleB$global_table %>% flextable_output()
+```
+
+```{r}
+exampleB$treatment_table %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6), digits = 0) 
+
+```
+
+
+```{r, eval=TRUE}
+exampleB$contract_table %>% 
+  flextable_output()   
+```
+
+## Analysis of payment plan
+
+
+```{r}
+df =  contract_analysis(exampleB, show_details = TRUE) 
+```
+
+
+```{r}
+df2 = df %>% 
+  group_by(name, plan) %>% select(-contract) %>% 
+  summarise_all(~sum(.x, na.rm = TRUE)) 
+
+df2 %>% 
+  flextable_output()
+```
+
+```{r}
+compare_results(df) %>% 
+   flextable_output()
+```
+
+## Plots over time
+
+
+```{r}
+
+plot_payments(exampleB)
+```
+
+```{r}
+plot_QALY(exampleB)
+```
+
+
