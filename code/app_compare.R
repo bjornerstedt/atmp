@@ -48,9 +48,9 @@ shinyApp(
     
     vals <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL)
     
-    indata = load_data(vals, 'examples.xlsx')
+    indata = load_data(vals, 'Example_A.xlsx')
       
-    vals$treatment_table <- as.data.frame( read_excel('examples.xlsx', sheet = "Treatments", col_types = 'text'))
+    vals$treatment_table <- as.data.frame( read_excel('Example_A.xlsx', sheet = "Treatments", col_types = 'text'))
 
     output$summary_analysis <- renderTable({
         # req(input$analysis)

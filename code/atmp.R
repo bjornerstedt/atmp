@@ -1,5 +1,6 @@
 library(tidyverse)
 
+# Load data into reactiveValues object
 load_data <- function(vals, indata, filename) {
   tryCatch(
     {
@@ -140,6 +141,8 @@ plot_QALY <- function(indata) {
     aes(time, QALY, color = name) + 
     geom_line() + labs(color ="Arm", title = "QALY over time")
 }
+
+################## BASIC FUNCTIONS #########################
 
 discounting = function(ir, max_year) {
   year = 1:max_year

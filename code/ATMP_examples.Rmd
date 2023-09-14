@@ -34,6 +34,7 @@ source("atmp.R")
 
 # Läs in från Excel
 # source("create_settings.R")
+example_simple = open_indata("simple.xlsx")
 exampleA = open_indata("Example_A.xlsx")
 exampleB = open_indata("Example_B.xlsx")
 exampleA2 = open_indata("Example_A2.xlsx")

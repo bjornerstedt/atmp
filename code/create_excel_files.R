@@ -43,7 +43,7 @@ control_plan,   Control arm,
 ) 
 
 #
-# -------------- EXAMPLE A ---------------------------
+# -------------- SIMPLE EXAMPLE ---------------------------
 
 global_table = read_csv("
 name, value
@@ -57,17 +57,16 @@ control_plan, 0
 ) 
 
 treatment_table = read_csv("
-plan, name, p_HU, p_HD, p_UD, health_states
-1, ATMP,              0.04, 0.01, 0.02, 6
-0, Comparison,        1,    0.01, 0.02, 6
+plan, name, p_HU, health_states
+1, ATMP,              0.04, 4
+0, Comparison,        1, 4
 ") 
 
 contract_table = read_csv("
-plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end
-1, ATMP company,10,0,        10,0,             0, 1,2
-0, Comparison,0,0.5,            0,0,             0,1,6
-") %>% 
-  select(-refund, -start, -initial_payment)
+plan, name,tot_payment, cont_payment,     contract_length, end
+1, ATMP company,10,0,        10,2
+0, Comparison,0,0.5,            0,4
+") 
 
 # state_table = read_csv("
 # name,   state,    hazard,   QoL,  death_hazard
@@ -89,6 +88,34 @@ models = list(
   Contract_fields = contract_description,
   Global_fields = global_description
 )
+
+write_xlsx(models, "Simple.xlsx")
+
+# -------------- EXAMPLE A ---------------------------
+
+models$Treatments = read_csv("
+plan, name, p_HU, p_HD, p_UD, health_states
+1, ATMP,              0.04, 0.01, 0.02, 6
+0, Comparison,        1,    0.01, 0.02, 6
+") 
+
+models$Contracts = read_csv("
+plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end
+1, ATMP company,10,0,        10,0,             0, 1,2
+1, Failure treatment,0,0.5,            0,0,             0,2,6
+0, Comparison,0,0.5,            0,0,             0,1,6
+") %>% 
+  select(-refund, -initial_payment)
+
+# state_table = read_csv("
+# name,   state,    hazard,   QoL,  death_hazard
+# ATMP,   1,        0.05,     1.0,    0.01
+# ATMP,   2,        1.00,     0.8,    0.02
+# ATMP,   3,        1.00,     0.6,    0.02
+# ATMP,   4,        1.00,     0.4,    0.02
+# ATMP,   5,        1.00,     0.2,    0.02
+# ATMP,   6,        0.00,     0.0,    0.02
+# ")
 
 write_xlsx(models, "Example_A.xlsx")
 

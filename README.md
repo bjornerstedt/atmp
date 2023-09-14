@@ -2,9 +2,11 @@
 
 ## TODO:
 
-* Skapa rapport som sammanfattar modellerna
+* Separera fältbeskrivningar från data
 
 * Döp om variabler: contract
+
+* Döp om tabeller i indata.
 
 * BUG: Visa DT tabeller enbart om indata är laddat
 
@@ -27,6 +29,10 @@
 * Kalla arm new old
 
 ## Genomfört -------------------------------------------------------------
+
+* Skapa rapport som sammanfattar modellerna
+
+* Hjälpmeny med dokumentation i appen
 
 * Kolla varför Exempel B blir konstigt med 6 states
 

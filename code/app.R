@@ -19,7 +19,7 @@ shinyApp(
   ui = fluidPage(
     tags$head(
       tags$style(HTML(
-        ".tabbable ul li:nth-child(6) { float: right; }"
+        ".tabbable ul li:nth-child(5) { float: right; }"
       ))
     ),
     tabsetPanel(
@@ -70,15 +70,15 @@ shinyApp(
         # verbatimTextOutput("print_con"),
         # verbatimTextOutput("print_gl")
       ),
-      tabPanel("Report", 
-               h3('Generate report'),
-               helpText(),
-               selectInput('x', 'Select form template:',
-                           choices = c("Short", "Complete")),
-               radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
-                            inline = TRUE),
-               downloadButton('downloadReport')
-      ),
+      # tabPanel("Report", 
+      #          h3('Generate report'),
+      #          helpText(),
+      #          selectInput('x', 'Select form template:',
+      #                      choices = c("Short", "Complete")),
+      #          radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
+      #                       inline = TRUE),
+      #          downloadButton('downloadReport')
+      # ),
       tabPanel("Help", 
                includeMarkdown("ATMP-package.md")
       )    
@@ -91,14 +91,12 @@ shinyApp(
     indata <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, treatment_description = NULL, contract_description = NULL)
 
     
-    observe({
-      req(input$upload)
+    observeEvent(input$upload, {
       indata <- load_data(vals, indata, input$upload$datapath)
       vals$filename <- input$upload$name
     })
 
-    observe({
-      req(input$loadexample)
+    observeEvent(input$loadexample, {
       filenames = list(
         "Example A" = "Example_A.xlsx",
         "Example A2" = "Example_A2.xlsx",
