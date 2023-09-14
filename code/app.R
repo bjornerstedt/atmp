@@ -17,16 +17,16 @@ example_list = c("Example A", "Example B", "Example A2")
 
 shinyApp(
   ui = fluidPage(
+    tags$head(
+      tags$style(HTML(
+        ".tabbable ul li:nth-child(6) { float: right; }"
+      ))
+    ),
     tabsetPanel(
       id = "tabset",
       tabPanel("Overview",
                includeMarkdown("overview.md")
       ),
-      # tabPanel("Overview",
-      #   h3("ATMP payment models"),
-      #   p("Here is an intro"),
-      #   a(href="http://google.com", "Click Here!")
-      # ),
       tabPanel("Model",
         h3('Model'),
         p('Select example dataset or upload Excel sheet.'),
@@ -78,6 +78,9 @@ shinyApp(
                radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
                             inline = TRUE),
                downloadButton('downloadReport')
+      ),
+      tabPanel("Help", 
+               includeMarkdown("ATMP-package.md")
       )    
     )
   ),
@@ -182,7 +185,7 @@ shinyApp(
     output$cono = 
       # vals$contract_table %>% 
       # with_titles( indata$contract_description) %>%
-      DT::renderDataTable(vals$contract_table , selection = 'none', 
+      DT::renderDataTable(vals$contract_table , selection = 'none', colnames=get_titles(vals$contract_table, indata$contract_description), 
                     editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
     
     proxy_con = dataTableProxy('cono')

@@ -2,12 +2,6 @@
 
 ## TODO:
 
-* Gör om atmp projekt till att inte vara ett paket
-
-* BUG: Ny fil laddas inte i DT
-
-* Kolla varför Exempel B blir konstigt med 6 states
-
 * Skapa rapport som sammanfattar modellerna
 
 * Döp om variabler: contract
@@ -32,7 +26,13 @@
 
 * Kalla arm new old
 
-## Genomfört
+## Genomfört -------------------------------------------------------------
+
+* Kolla varför Exempel B blir konstigt med 6 states
+
+* Gör om atmp projekt till att inte vara ett paket
+
+* BUG: Ny fil laddas inte i DT
 
 * Skapa exempelfiler
 
