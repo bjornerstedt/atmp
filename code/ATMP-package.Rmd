@@ -2,8 +2,8 @@
 title: "ATMP package documentation"
 always_allow_html: true
 output:
-  md_document: default
   html_document: default
+  md_document: default
   word_document: default
 ---
 

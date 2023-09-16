@@ -1,0 +1,178 @@
+---
+title: "Untitled"
+author: "Jonas Björnerstedt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(knitr)
+library(shiny)
+library(kableExtra)
+library(flextable)
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(dplyr.summarise.inform = FALSE)
+options(knitr.kable.NA = '') # Suppress printing of NA in kable
+# Standard theme for document 
+theme_set(theme_bw()) 
+
+set_flextable_defaults(
+align = "center",
+digits = 2
+# theme_fun = theme_zebra
+  )
+
+doShiny = TRUE
+
+source("atmp.R")
+
+
+# Läs in från Excel
+# source("create_settings.R")
+example_simple = open_indata("simple.xlsx")
+exampleA = open_indata("Example_A.xlsx")
+exampleB = open_indata("Example_B.xlsx")
+exampleA2 = open_indata("Example_A2.xlsx")
+
+```
+
+
+## Title
+
+# State table version
+
+```{r}
+state_tableA = read_csv("
+treatment,    state,    pr.prog,   QoL,  p_death, payment, payment2
+ATMP,         1,        0.05,     1.0,    0.01,   ATMP, Hospital
+ATMP,         2,        1.00,        ,    0.02,   Comparison
+ATMP,         6,        0.00,     0.0,    0.00,
+Comparison,   1,        1.00,     1.0,    0.02,   Comparison
+Comparison,   6,        0.00,     0.0,    0.00,   
+")
+state_tableA %>% flextable_output()
+```
+
+* Omit QoL and it is linear
+
+* Can specify QoL at transition instead of NA. Can also specify QoL for each state.
+
+* If state is omitted, it is set to the next value. Useful for example 3 and for omitting state completely.
+
+* Omit p_death and it is set with real hazard
+
+* Lägg till arm kolumn om det är fler än två treatments
+
+```{r, eval=TRUE}
+exampleA$contract_table %>% 
+  select(-plan, -start, -end) %>% 
+  rename(payment_plan = name) %>% 
+  flextable_output()   
+```
+
+## Example B
+
+```{r}
+state_tableB = read_csv("
+treatment,    state,    pr.prog,   QoL,  p_death, payment
+ATMP,         1,        0.05,      0.9,    0.02,   ATMP
+ATMP,         2,        0,         0.8,    0.02,   Comparison
+ATMP,         3,        0,        0.0,    0.00,
+Comparison,   1,        0,        0.8,    0.02,   Comparison
+Comparison,   2,        0,        0.0,    0.00,   
+")
+state_tableB %>% flextable_output()
+```
+
+## Example C
+
+```{r}
+state_tableC = read_csv("
+treatment,    state,    pr.prog,   QoL,  p_death, payment, payment2
+ATMP,         1,        1.00,      1.0,    0.02,   Comparison
+ATMP,         2,        0.05,         ,    0.01,   ATMP, Hospital
+ATMP,         3,        1.00,         ,    0.02,   Comparison
+ATMP,         6,        0.00,     0.0,    0.00,
+Comparison,   1,        1.00,     1.0,    0.02,    Comparison
+Comparison,   6,        0.00,     0.0,    0.00,   
+")
+state_tableC %>% flextable_output()
+```
+
+# Create full table
+
+```{r}
+indata = state_tableA %>% filter(treatment == "ATMP") 
+indata$QoL[2] = 0.6
+indata
+```
+
+Check input 
+
+```{r}
+indata$state[[1]] == 1
+end = last(indata)$state
+```
+
+Fill state table and create item variable - could be useful in payments that continue over states
+
+```{r}
+create_state_table = function(indata) {
+indata  %>% group_by(treatment) %>% 
+  mutate(QoLstate = pmax(state, QoL), QoLnext = replace_na(lead(QoL), 0)) %>% fill(QoLstate) %>%  # Get QoLstate
+  mutate(periods = replace_na(lead(state) - state, 1)) %>% fill(QoL) %>% 
+  uncount(periods) %>% mutate(item = state, state = 1:end) %>% 
+  group_by(treatment, QoLstate) %>% 
+  mutate(QoL = QoL - (QoL - QoLnext)*(row_number() - 1 )/n() ) %>% 
+  ungroup() %>% 
+  select(-QoLstate, -QoLnext)
+}
+state_table = create_state_table(state_tableA)
+state_table
+```
+
+```{r}
+transition_matrix <- function(state_table, tr) {
+  state_table = state_table %>% filter(treatment == tr)
+  health_states = max(state_table$state)
+  P = matrix(0, health_states, health_states)
+  for (i in 1:(health_states-1)) {
+    P[i, i] = 1 - state_table$pr.prog[i] 
+    P[i, i + 1] = state_table$pr.prog[i] - state_table$p_death[i]
+    P[i, health_states] =  P[i, health_states] + state_table$p_death[i] 
+  }
+  P[health_states, health_states] = 1
+  rownames(P) = colnames(P) = c(sprintf("S%d", 1:(health_states - 1)), "D")
+  P
+}
+
+P = transition_matrix(state_table, "ATMP") 
+```
+
+```{r}
+get_QoL <- function(state_table, tr) {
+  state_table = state_table %>% filter(treatment == tr)
+  state_table %>% pull(QoL)
+  # if (tr$QoL_end > 0) {
+  #   QoL = c(seq(tr$QoL_start, tr$QoL_end, length.out = tr$health_states-1), 0)
+  # } else {
+  #   QoL = seq(tr$QoL_start, tr$QoL_end, length.out = tr$health_states)
+  # }
+  # QoL
+}
+get_QoL(state_table, "ATMP") 
+
+```
+
+```{r}
+  states = expected_markov( P, 20)
+states
+```
+
+For continuous payments, we can calculate costs by simply creating a cost vector - payment per state
+
+For multi-period payments with certain starting time we can do the same as we know the time and the share entering the ATMP state. 

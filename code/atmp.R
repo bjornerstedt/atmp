@@ -187,8 +187,7 @@ run.mc.sim <- function( P, T = 50 ) {
 }
 
 
-expected_markov <- function(tr, T ) {
-  P = transition( tr)
+expected_markov <- function(P, T ) {
   num.states <- nrow(P)
   initstate = rep(0, num.states)
   initstate[1] = 1
@@ -351,6 +350,13 @@ Contract <- function(
   structure(parameters, class = "Contract")
 }
 
+# Put global_table in a list globals
+get_globals <- function(global_table) {
+  globals = global_table %>% select(value) %>% transpose() %>% flatten()
+  names(globals) = global_table  %>% select(name) %>% pull()
+  globals
+}
+
 # Create payment vector for contract
 contract_payments <- function(c) {
   if (c$initial_payment > 0) {
@@ -362,7 +368,9 @@ contract_payments <- function(c) {
   payment
 }
 
-# TODO: Find general way to transform for plots over time
+# payment_plan creates a vector of discounted per period costs over the time_horizon
+# It takes a payment_plan as input and returns payments per period.
+# For non-continuous payment plans it assumes that payments start in period 1
 payment_plan <- function(con, globals) {
   T = globals$time_horizon
   costs = rep(0, T)
@@ -374,17 +382,21 @@ payment_plan <- function(con, globals) {
       payment = rep(con$tot_payment/con$contract_length, con$contract_length)
     }
     costs[1:length(payment)] = payment 
+    costs = costs / 
+      discounting(globals$firm_discount, T)  *
+      discounting(globals$discount, T) 
   } else {
     # Continuous payment, with possibly a trend in costs
     costs[1:T] = con$cont_payment *
       discounting(con$cost_trend, T) 
+    costs = costs  *
+      discounting(globals$discount, T) 
   }
   # Future payments increase due to firm_discount, decrease with HA discount
-  costs / 
-    discounting(globals$firm_discount, T)  *
-    discounting(globals$discount, T) 
+  costs
 }
 
+# Get payments for all payment plans. Used in displaying model inputs
 payment_plans <- function(indata) {
   globals = get_globals(indata$global_table)
   
@@ -400,7 +412,7 @@ payment_plans <- function(indata) {
 
 analyse_contract <- function(con, tr, globals) {
   
-  states = expected_markov(tr, globals$time_horizon)
+  states = expected_markov( transition( tr), globals$time_horizon)
   
   # failing indicates share that enter failing state. Note that death without 
   # entering state is not included. Refunds are reasonable if the treatment 
@@ -477,12 +489,6 @@ summarise_contract <- function(con, tr, globals, over_time = FALSE) {
       plan = con$plan ,
       contract = con$name ,
       .before = 1)
-}
-
-get_globals <- function(global_table) {
-  globals = global_table %>% select(value) %>% transpose() %>% flatten()
-  names(globals) = global_table  %>% select(name) %>% pull()
-  globals
 }
 
 contract_analysis <- function(indata, active_plan = NA, control_plan = 0, 
