@@ -381,7 +381,8 @@ payment_plan <- function(con, globals) {
     } else {
       payment = rep(con$tot_payment/con$contract_length, con$contract_length)
     }
-    costs[1:length(payment)] = payment 
+    # Payment plan can start in a later state if previous plans states are deterministic
+    costs[con$start:min(length(payment) + con$start - 1, T)] = payment 
     costs = costs / 
       discounting(globals$firm_discount, T)  *
       discounting(globals$discount, T) 
