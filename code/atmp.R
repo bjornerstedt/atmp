@@ -39,8 +39,12 @@ open_indata <- function(infile) {
     treatment_description = read_excel(infile, sheet = "Treatment_fields") ,
     contract_description = read_excel(infile, sheet = "Contract_fields")
   )
-  if ("Global_fields" %in% excel_sheets(infile)) {
-    indata$global_description = read_excel(infile, sheet = "Global_fields")
+  if ("States" %in% excel_sheets(infile)) {
+      indata$state_table = read_excel(infile, sheet = "States")
+      indata$payment_table = read_excel(infile, sheet = "Payments")
+  }
+    if ("Global_fields" %in% excel_sheets(infile)) {
+      indata$global_description = read_excel(infile, sheet = "Global_fields")
       # indata$state_table = read_excel(infile, sheet = "States")
   }
   indata

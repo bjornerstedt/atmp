@@ -29,6 +29,7 @@ digits = 2
 doShiny = TRUE
 
 source("atmp.R")
+source("atmp_new.R")
 
 # Läs in från Excel
 # source("create_settings.R")
@@ -36,6 +37,7 @@ example_simple = open_indata("simple.xlsx")
 exampleA = open_indata("Example_A.xlsx")
 exampleB = open_indata("Example_B.xlsx")
 exampleA2 = open_indata("Example_A2.xlsx")
+exampleC = open_indata("Example_C.xlsx")
 
 ```
 
@@ -45,20 +47,15 @@ exampleA2 = open_indata("Example_A2.xlsx")
 # State table version
 
 ```{r}
-state_tableA = read_csv("
-treatment,    state,    pr.prog,   QoL,  p_death, payment
-ATMP,         1,        0.05,     1.0,    0.01,   ATMP
-ATMP,         2,        1.00,        ,    0.02,   Comparison
-ATMP,         6,        0.00,     0.0,    0.00,
-Comparison,   1,        1.00,     1.0,    0.02,   Comparison
-Comparison,   6,        0.00,     0.0,    0.00,   
-")
-state_tableA %>% flextable_output()
+state_tableA = exampleA$state_table
+exampleA$state_table %>% flextable_output()
 ```
 
 * Omit QoL and it is linear
 
 * Can specify QoL at transition instead of NA. Can also specify QoL for each state.
+
+Not done
 
 * If state is omitted, it is set to the next value. Useful for example 3 and for omitting state completely.
 
@@ -67,109 +64,46 @@ state_tableA %>% flextable_output()
 * Lägg till arm kolumn om det är fler än två treatments
 
 ```{r, eval=TRUE}
-exampleA$contract_table %>% 
-  select(-plan, -start, -end) %>% 
-  rename(payment_plan = name) %>% 
+exampleA$payment_table %>% 
   flextable_output()   
 ```
 
 ## Example B
 
 ```{r}
-state_tableB = read_csv("
-treatment,    state,    pr.prog,   QoL,  p_death, payment
-ATMP,         1,        0.05,      0.9,    0.02,   ATMP
-ATMP,         2,        0,         0.8,    0.02,   Comparison
-ATMP,         3,        0,        0.0,    0.00,
-Comparison,   1,        0,        0.8,    0.02,   Comparison
-Comparison,   2,        0,        0.0,    0.00,   
-")
-state_tableB %>% flextable_output()
+
+exampleB$state_table %>% flextable_output()
 ```
 
 ## Example C
 
 ```{r}
-state_tableC = read_csv("
-treatment,    state,    pr.prog,   QoL,  p_death, payment
-ATMP,         1,        1.00,      1.0,    0.02,   Comparison
-ATMP,         2,        0.05,         ,    0.01,   ATMP
-ATMP,         3,        1.00,         ,    0.02,   Comparison
-ATMP,         6,        0.00,     0.0,    0.00,
-Comparison,   1,        1.00,     1.0,    0.02,    Comparison
-Comparison,   6,        0.00,     0.0,    0.00,   
-")
-state_tableC %>% flextable_output()
+exampleC$state_table %>% flextable_output()
 ```
 
 # Create full table
 
-```{r}
-indata = state_tableA %>% filter(treatment == "ATMP") 
-indata$QoL[2] = 0.6
-indata
-```
-
-Check input 
-
-```{r}
-indata$state[[1]] == 1
-```
-
 Fill state table and create item variable - could be useful in payments that continue over states
 
 ```{r}
-create_state_table = function(indata) {
-indata  %>% group_by(treatment) %>% 
-  mutate(QoLstate = pmax(state, QoL), QoLnext = replace_na(lead(QoL), 0)) %>% fill(QoLstate) %>%  # Get QoLstate
-  mutate(periods = replace_na(lead(state) - state, 1)) %>% fill(QoL) %>% 
-  uncount(periods) %>% mutate(item = state, state = row_number()) %>% 
-  group_by(treatment, QoLstate) %>% 
-  mutate(QoL = QoL - (QoL - QoLnext)*(row_number() - 1 )/n() ) %>% 
-  ungroup() %>% 
-  select(-QoLstate, -QoLnext)
-}
-state_table = create_state_table(state_tableA) %>% 
+state_table = create_state_table(exampleA$state_table) %>% 
   filter(treatment == "ATMP")
 state_table 
 ```
 
 ```{r}
-transition_matrix <- function(state_table) {
-  state_table = state_table
-  health_states = max(state_table$state)
-  P = matrix(0, health_states, health_states)
-  for (i in 1:(health_states-1)) {
-    P[i, i] = 1 - state_table$pr.prog[i] 
-    P[i, i + 1] = state_table$pr.prog[i] - state_table$p_death[i]
-    P[i, health_states] =  P[i, health_states] + state_table$p_death[i] 
-  }
-  P[health_states, health_states] = 1
-  rownames(P) = colnames(P) = c(sprintf("S%d", 1:(health_states - 1)), "D")
-  P
-}
-
 P = transition_matrix(state_table) 
 P
 ```
 
 ```{r}
-get_QoL <- function(state_table) {
-  state_table %>% pull(QoL)
-  # if (tr$QoL_end > 0) {
-  #   QoL = c(seq(tr$QoL_start, tr$QoL_end, length.out = tr$health_states-1), 0)
-  # } else {
-  #   QoL = seq(tr$QoL_start, tr$QoL_end, length.out = tr$health_states)
-  # }
-  # QoL
-}
 get_QoL(state_table) 
 
 ```
 
 ```{r}
-  states = expected_markov( P, 20)
-states
+expected_markov( P, 20)
+
 ```
 
 For continuous payments, we can calculate costs by simply creating a cost vector - payment per state
@@ -197,11 +131,7 @@ aggregate_failure, Agg. Fail, 0, Threshold share of population for aggregate fai
 # Comparison,        1, 4
 # ") 
 
-contract_table = read_csv("
-payment,tot_payment, cont_payment,     contract_length
-ATMP,10,0,        10
-Comparison,0,0.5, 
-") 
+payment_table = exampleA$payment_table
 
 global_table = read_csv("
 name, value
@@ -215,16 +145,6 @@ control_plan, 0
 ) 
 ```
 
-Perhaps start should be called state, to confirm to new structure
-
-
-```{r}
-named_list <- function(table, name, value) {
-  ret = as.list(table[[value]])
-  names(ret) = table[[name]]
-  ret  
-}
-```
 
 Single contract as list with defaults
 
@@ -232,128 +152,37 @@ Single contract as list with defaults
 con_def = named_list(contract_description, "name", "value")
 globals = named_list(global_table, "name", "value")
 
-con = modifyList(con_def, 
-        contract_table %>% slice(1) %>% transpose() %>% pluck(1)
-      )
-
 ```
 
-```{r}
-con$start =15
-payment_plan(con, globals)
-```
+
 
 ```{r}
-con1 = state_table %>% 
-  left_join(contract_table) %>% 
+state_table %>% 
+  left_join(payment_table) %>% 
   mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
-  mutate(start = state, payment = replace_na(payment, "Death")) 
+  mutate(payment = replace_na(payment, "Death")) 
 
-con1
-```
-
-Depends on con1 rather than on state_table
-
-```{r}
-con = modifyList(con_def, 
-        con1 %>% slice(1) %>% transpose() %>% pluck(1)
-      )
-con$start = con$state
-payment_plan(con, globals)
-
-```
-
-
-
-```{r}
-create_payment_plans <- function(state_table, contract_table, globals) {
-  
-  cons = state_table %>% 
-    left_join(contract_table) %>% 
-    mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
-    mutate(start = state, payment = replace_na(payment, "Death"))
-  
-  ret = c()
-  for (i in 1:nrow(cons)) {
-    con = cons %>% slice(i)  %>% as.list() %>% 
-      modifyList(con_def, .)
-    ret = c(ret, payment_plan(con, globals))
-  }
-  ret = matrix(ret, ncol = nrow(con1))
-  ret
-}
-
-create_payment_plans(state_table, contract_table, globals)
 
 ```
 
 
 ```{r}
-state_table
+create_payment_plans(state_table, payment_table, globals)
+
 ```
 
+
 ```{r}
-analyse_treatment <- function(state_table, contract_table, globals) {
-  
-P = transition_matrix(state_table) 
-  
-  states = expected_markov( P, globals$time_horizon)
 
-  # CALCULATE COSTS AND QALY
-  costs =  create_payment_plans(state_table, contract_table, globals) * states
-
-  QALY = as.vector( states %*% get_QoL(state_table)) * 
-    discounting(globals$discount, globals$time_horizon)
-    
-   # Put into dataset and sum costs over states 
-   ret = tibble()
-     costs_df = costs %>% 
-      as_tibble() %>% 
-      mutate(time = row_number()) %>% 
-      pivot_longer(-time, names_to = "state", values_to = "value", names_prefix = "S", names_transform = as.integer) %>% 
-      left_join(state_table %>% select(state, costben = payment)) %>% 
-      filter(!is.na(costben)) %>% 
-      group_by(time, costben) %>% summarise(value = sum(value))
-
-    ret = bind_rows(ret,
-      bind_rows(costs_df, tibble(time = 1:length(QALY), costben = "QALY", value = QALY) ) %>% 
-        add_column( treatment = state_table$treatment[[1]], .before = 1)
-    )
-    ret
-}
-
-analyse_treatment(state_table, contract_table, globals) 
+analyse_treatment(state_table, payment_table, globals) 
 
 ```
 
 ```{r}
-analyse_treatments <- function(state_table, contract_table, globals, over_time = FALSE) {
-  state_table_all = create_state_table(state_table) 
-  
-  treats = state_table_all %>% distinct(treatment) %>% pull()
-  ret = tibble()
-  for (i in 1:length(treats)) {
-    state_table_i = state_table_all %>% filter(treatment == treats[i])
-      ret = bind_rows(ret, analyse_treatment(state_table_i, contract_table, globals))
-  }
-  ret
-}
-
-create_state_table(state_tableA) %>% analyse_treatments(contract_table, globals, over_time = FALSE)
+analyse_treatments(exampleA, over_time = FALSE)
 ```
-
-
-```{r, eval=FALSE}
-state_table = create_state_table(state_tableA) %>% 
-  group_by(treatment) %>% 
-  nest() %>% 
-  analyse_treatment(contract_table) %>% 
-  unnest()
-
-  
-
+```{r}
+contract_analysis(exampleA, show_details = TRUE) 
 ```
-
-
 
 
