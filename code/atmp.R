@@ -103,6 +103,8 @@ load_data <- function(vals, indata, filename) {
       stop(safeError(e))
     }
   )
+    
+  indata$errors = check_indata(indata)
   # Reactive values updated from treatment_table
   # vals$treatment_table <- read_excel(filename, sheet = "Treatments", col_types = 'text') 
   # vals$contract_table <- read_excel(filename, sheet = "Contracts", col_types = 'text') 

@@ -9,7 +9,7 @@ source("atmp.R")
 dt_output = function(title, id) {
   fluidRow(column(
     12, h4( title),
-    DT::dataTableOutput(id), hr()
+    DT::dataTableOutput(id)
   ))
 }
 
@@ -60,6 +60,8 @@ shinyApp(
          h3('Analysis of model'),
          p('Payments and QALY for each treatment'),
          tableOutput("partial_analysis") ,
+         div(tableOutput("errors"),
+             style = "color: #FF0000"),
          h4('Comparison'), 
          tableOutput("summary_analysis"),
          hr(),
@@ -89,7 +91,8 @@ shinyApp(
     theme_set(theme_bw()) 
     
     vals <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, filename = NULL)
-    indata <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, treatment_description = NULL, contract_description = NULL)
+    indata <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, 
+                    treatment_description = NULL, contract_description = NULL, errors = NULL)
 
     
     observeEvent(input$upload, {
@@ -138,7 +141,16 @@ shinyApp(
       req(vals$filename )
       contract_analysis(vals)
     })
-  
+    
+    output$errors <- renderTable({
+      req(indata$errors )
+      
+      if (nrow(indata$errors)) {
+        indata$errors
+      }
+      
+    })
+    
     output$QoL <- renderPlot({
       req(vals$filename )
       plot_QoL(vals)
@@ -167,7 +179,10 @@ shinyApp(
     # Treatments
     output$tro =  
       # with_titles( indata$treatment_description) %>%
-      DT::renderDataTable( vals$treatment_table, selection = 'none', colnames=get_titles(vals$treatment_table, indata$treatment_description), 
+      DT::renderDataTable( {
+        req(vals$filename )
+        vals$treatment_table
+        }, selection = 'none', colnames=get_titles(vals$treatment_table, indata$treatment_description), 
                     editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
 
     proxy_tr = dataTableProxy('tro')
@@ -185,7 +200,10 @@ shinyApp(
     output$cono = 
       # vals$contract_table %>% 
       # with_titles( indata$contract_description) %>%
-      DT::renderDataTable(vals$contract_table , selection = 'none', colnames=get_titles(vals$contract_table, indata$contract_description), 
+      DT::renderDataTable({
+        req(vals$filename )
+        vals$contract_table
+        } , selection = 'none', colnames=get_titles(vals$contract_table, indata$contract_description), 
                     editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
     
     proxy_con = dataTableProxy('cono')

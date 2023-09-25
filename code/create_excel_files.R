@@ -74,8 +74,8 @@ plan, name, p_HU, health_states
 
 contract_table = read_csv("
 plan, name,tot_payment, cont_payment,     contract_length, end
-1, ATMP company,10,0,        10,2
-0, Comparison,0,0.5,            0,4
+1, For ATMP tr.,10,0,        10,2
+0, For Comparator tr.,0,0.5,            0,4
 ") 
 
 # state_table = read_csv("
@@ -111,9 +111,9 @@ plan, name, p_HU, p_HD, p_UD, health_states
 
 models$Contracts = read_csv("
 plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end
-1, ATMP company,10,0,        10,0,             0, 1,2
-1, Comparator company on failure,0,0.5,            0,0,             0,2,6
-0, Comparator company,0,0.5,            0,0,             0,1,6
+1, For ATMP tr.,10,0,        10,0,             0, 1,2
+1, For Comparator tr. on failure,0,0.5,            0,0,             0,2,6
+0, For Comparator tr.,0,0.5,            0,0,             0,1,6
 ") %>% 
   select(-refund, -initial_payment)
 
@@ -146,9 +146,9 @@ plan, name, p_HU, p_HD, p_UD, health_states, QoL_start, QoL_end, random_state2
 
 models$Contracts = read_csv("
 plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end, cost_trend
-1, ATMP company,            10,0,      10,0,             0, 1,2, 0
-1, Failure treat. w trend , 0,0.5,      0,0,             0, 2,4, 0.05
-0, Comparison w trend,      0,0.5,      0,0,             0, 1,4, 0.05
+1, For ATMP tr.,            10,0,      10,0,             0, 1,2, 0
+1, For failure tr. w trend , 0,0.5,      0,0,             0, 2,4, 0.05
+0, For comparator tr. w trend,      0,0.5,      0,0,             0, 1,4, 0.05
 ") 
 
 models$States = read_csv("
@@ -193,10 +193,10 @@ plan, name, p_HU, p_HD, p_UD, health_states
 
 models$Contracts = read_csv("
 plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end
-1, ATMP company,10,0,        10,0,             0, 1,2
-1, Hospital,0.5,0,           1,0,           0,1,6
-1, Failure treatment,0,0.5,      0,0,             0,2,6
-0, Comparison,0,0.5,            0,0,             0,1,6
+1, For ATMP tr.,10,0,        10,0,             0, 1,2
+1, For Hospital tr.,0.5,0,           1,0,           0,1,6
+1, For failure tr.,0,0.5,      0,0,             0,2,6
+0, For comparator tr.,0,0.5,            0,0,             0,1,6
 ")
 
 write_xlsx(models, "Example_A2.xlsx")
@@ -215,11 +215,11 @@ plan, name, p_HU, p_HD, p_UD, health_states, random_state
 
 models$Contracts = read_csv("
 plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end
-1, ATMP payment,10,0,        10,0,             0, 1,2
-2, ATMP future payment, 8,0,        10,0,             0, 3,4
-2, Initial waiting,0,0.5,            0,0,             0,1,6
-2, Failure treatment, 0,0.5,            0,0,             0,1,6
-0, Comparison,0,0.5,            0,0,             0,1,6
+1, For ATMP tr.,10,0,        10,0,             0, 1,2
+2, For ATMP tr., 8,0,        10,0,             0, 3,4
+2, For tr. while waiting,0,0.5,            0,0,             0,1,6
+2, For failure tr., 0,0.5,            0,0,             0,1,6
+0, For comparator tr.,0,0.5,            0,0,             0,1,6
 ")
 
 models$States = read_csv("

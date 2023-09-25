@@ -2,33 +2,53 @@
 
 ## TODO:
 
+* How should probabilities be defined?
+
+* state_table
+
+  * If state is omitted, it is set to the next value. Useful for example 3 and for omitting state completely.
+
+  * Omit p_death and it is set with real hazard
+
+  * Life table
+  
+  * generate QoL if it is omitted
+  
+  * Två eller flera payments genom kommaseparering. (De gäller för alla perioder som tabellen specificerar, med periods anges hur betalning sker.)
+
 * Separera fältbeskrivningar från data
 
 * Döp om variabler: contract
 
 * Döp om tabeller i indata.
 
-* BUG: Visa DT tabeller enbart om indata är laddat
-
 * Hjälptext
 
 * Inputkoll: 
 
-    * BUG: Kolla att states i contracts inte överskrider antal states i treatments
-
     * Sannolikheter måste summera till 1
     
-    * Lägg till min max gränser i tabeller
-
 * Lägg till nedladdning av rapport till ATMP app, med indata som parameter
 
     * Visa rapport i appen.
 
-* random_state = 0 bör finnas för Jämförelse
-
 * Kalla arm new old
 
+* lägg till armval i globals: control_states = 2
+
 ## Genomfört -------------------------------------------------------------
+
+* random_state = 0 bör finnas för Jämförelse
+
+* BUG: Visa DT tabeller enbart om indata är laddat
+
+* Inputkoll: 
+
+    * Kolla att states i contracts inte överskrider antal states i treatments
+
+    * Sannolikheter måste summera till 1
+    
+    * Lägg till min max gränser i tabeller
 
 * Skapa rapport som sammanfattar modellerna
 
