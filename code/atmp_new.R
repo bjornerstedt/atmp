@@ -19,8 +19,8 @@ transition_matrix <- function(state_table) {
   health_states = max(state_table$start)
   P = matrix(0, health_states, health_states)
   for (i in 1:(health_states-1)) {
-    P[i, i] = 1 - state_table$pr.prog[i] 
-    P[i, i + 1] = state_table$pr.prog[i] - state_table$p_death[i]
+    P[i, i] = 1 - state_table$p_prog[i] 
+    P[i, i + 1] = state_table$p_prog[i] - state_table$p_death[i]
     P[i, health_states] =  P[i, health_states] + state_table$p_death[i] 
   }
   P[health_states, health_states] = 1

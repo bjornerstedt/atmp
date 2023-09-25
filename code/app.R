@@ -51,15 +51,16 @@ shinyApp(
            dt_output('Treatments', 'tro'),
           dt_output('Payment plans', 'cono'),
           dt_output('Globals', 'glo'),
-          hr(), 
           h4('Download modified data'), 
           p('Download modified model file to your computer as Excel file.'),
           downloadButton("download")
       ),
       
       tabPanel("Analysis", 
-           h3('Analysis of model'),
+         h3('Analysis of model'),
+         p('Payments and QALY for each treatment'),
          tableOutput("partial_analysis") ,
+         h4('Comparison'), 
          tableOutput("summary_analysis"),
          hr(),
          h4('Plots over time'),
@@ -131,7 +132,8 @@ shinyApp(
       contract_analysis(vals, show_details = TRUE) %>%
         # select(-plan) %>% 
         rename(any_of(rubriker))
-    })
+    }, na = "")
+    
     output$summary_analysis <- renderTable({
       req(vals$filename )
       contract_analysis(vals)

@@ -68,6 +68,18 @@ exampleA$payment_table %>%
   flextable_output()   
 ```
 
+
+
+## Create full table
+
+Fill state table and create item variable - could be useful in payments that continue over states
+
+```{r}
+state_table = create_state_table(exampleA$state_table) %>% 
+  filter(treatment == "ATMP")
+state_table  %>% flextable_output()
+```
+
 ## Example B
 
 ```{r}
@@ -81,15 +93,7 @@ exampleB$state_table %>% flextable_output()
 exampleC$state_table %>% flextable_output()
 ```
 
-# Create full table
-
-Fill state table and create item variable - could be useful in payments that continue over states
-
-```{r}
-state_table = create_state_table(exampleA$state_table) %>% 
-  filter(treatment == "ATMP")
-state_table 
-```
+# Calculations
 
 ```{r}
 P = transition_matrix(state_table) 
@@ -110,7 +114,7 @@ For continuous payments, we can calculate costs by simply creating a cost vector
 
 For multi-period payments with certain starting time we can do the same as we know the time and the share entering the ATMP state. 
 
-# Contracts
+# Payment plans
 
 ```{r}
 contract_description = read_csv("
@@ -171,18 +175,19 @@ create_payment_plans(state_table, payment_table, globals)
 
 ```
 
+# Results
 
 ```{r}
 
-analyse_treatment(state_table, payment_table, globals) 
+analyse_treatment(state_table, payment_table, globals)  %>% flextable_output()
 
 ```
 
 ```{r}
-analyse_treatments(exampleA, over_time = FALSE)
+analyse_treatments(exampleA, over_time = FALSE) %>% flextable_output()
 ```
 ```{r}
-contract_analysis(exampleA, show_details = TRUE) 
+contract_analysis(exampleA, show_details = TRUE)  %>% flextable_output()
 ```
 
 
