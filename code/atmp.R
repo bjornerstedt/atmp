@@ -35,6 +35,7 @@ check_indata <- function(indata) {
   #     Not both tot_payment > 0 and cont_payment > 0
   #   Joint
   #     contract$end <= treatment$health_states for each plan in treatments
+  start = 1 # default value if column start does not exist
   errors2 = left_join(by = join_by(plan),
     indata$contract_table , 
     indata$treatment_table %>% select(plan, health_states)

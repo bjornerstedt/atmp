@@ -1,6 +1,7 @@
 # History files
 .Rhistory
 .Rapp.history
+*.xlsx
 # Session Data files
 .RData
 .RDataTmp
@@ -34,3 +35,4 @@ docs/
 po/*~
 # RStudio Connect folder
 rsconnect/
+README.md

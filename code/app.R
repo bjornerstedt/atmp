@@ -3,6 +3,7 @@ library(shiny)
 library(DT)
 library(writexl)
 library(readxl)
+library(rmarkdown)
 
 source("atmp.R")
 
@@ -19,7 +20,7 @@ shinyApp(
   ui = fluidPage(
     tags$head(
       tags$style(HTML(
-        ".tabbable ul li:nth-child(5) { float: right; }"
+        ".tabbable ul li:nth-child(6) { float: right; }"
       ))
     ),
     tabsetPanel(
@@ -73,15 +74,15 @@ shinyApp(
         # verbatimTextOutput("print_con"),
         # verbatimTextOutput("print_gl")
       ),
-      # tabPanel("Report", 
-      #          h3('Generate report'),
-      #          helpText(),
-      #          selectInput('x', 'Select form template:',
-      #                      choices = c("Short", "Complete")),
-      #          radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
-      #                       inline = TRUE),
-      #          downloadButton('downloadReport')
-      # ),
+      tabPanel("Report",
+               h3('Generate report'),
+               helpText(),
+               selectInput('x', 'Select form template:',
+                           choices = c("Short", "Complete")),
+               radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
+                            inline = TRUE),
+               downloadButton('downloadReport')
+      ),
       tabPanel("Help", 
                includeMarkdown("ATMP-package.md")
       )    
@@ -144,11 +145,9 @@ shinyApp(
     
     output$errors <- renderTable({
       req(indata$errors )
-      
       if (nrow(indata$errors)) {
         indata$errors
       }
-      
     })
     
     output$QoL <- renderPlot({
@@ -234,17 +233,42 @@ shinyApp(
     })
     
     # DOWNLOAD
-        
-    output$download <- downloadHandler(vals$filename, 
-                                       content = function(file) {
-                                         indata$treatment_table = vals$treatment_table 
-                                         indata$contract_table = vals$contract_table 
-                                         indata$global_table = vals$global_table 
-                                         write_xlsx(indata, file)
-                                       },
-                                       contentType="application/xlsx" 
-                                       )
     
+    get_indata = reactive({
+      indata$treatment_table = vals$treatment_table
+      indata$contract_table = vals$contract_table
+      indata$global_table = vals$global_table
+      indata
+    })    
+        
+    output$downloadReport <- downloadHandler(
+      filename = function() {
+        paste('report', sep = '.', switch(
+          input$format, PDF = 'pdf', HTML = 'html', Word = 'docx'
+        ))
+      },
+      
+      content = function(file) {
+        src <- normalizePath('report.Rmd')
+        # location = "/Users/jonasbjornerstedt/GitHub/atmp/R"
+        # src <- file.path(location, "report.Rmd")
+        
+        # temporarily switch to the temp dir, in case you do not have write
+        # permission to the current working directory
+        owd <- setwd(tempdir())
+        on.exit(setwd(owd))
+        file.copy(src, 'report.Rmd', overwrite = TRUE)
+        indata = get_indata()
+        out <- render('report.Rmd', 
+                      params = list(n = 45),
+                      envir = environment(), 
+                      output_format = switch(
+                        input$format,
+                        PDF = pdf_document(), HTML = html_document(), Word = word_document()
+                      ))
+        file.rename(out, file)
+      }
+    )    
   }
 )
 

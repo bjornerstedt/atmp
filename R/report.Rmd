@@ -1,5 +1,9 @@
 ---
 title: "ATMP analysis"
+params:
+  n:
+    label: "Year"
+    value: 30
 ---
 
 ```{r setup, include=FALSE}
@@ -125,30 +129,24 @@ ATMP,   3,        1.00,     0.33,    0.02
 ATMP,   4,        0.00,     0.0,    0.02
 ")
 
-indata = list(
-    treatment_table = treatment_table  ,
-    contract_table = contract_table  ,
-    global_table = global_table,
-    treatment_description = treatment_description ,
-    contract_description = contract_description ,
-    state_table =state_table 
-  )
+# indata = list(
+#     treatment_table = treatment_table  ,
+#     contract_table = contract_table  ,
+#     global_table = global_table,
+#     treatment_description = treatment_description ,
+#     contract_description = contract_description ,
+#     state_table =state_table 
+#   )
 
 # global_table = read_excel("models.xlsx", sheet = "Globals")
-
-models = list(
-  Globals = global_table ,
-  Treatments = treatment_table , 
-  Contracts = contract_table , 
-  QoL = tibble(QoL1 = QoL),
-  States = state_table,
-  Treatment_fields = treatment_description, 
-  Contract_fields = contract_description
-)
 
 # write_xlsx(models, "examples.xlsx")
 # indata = open_indata("examples.xlsx")
 
+```
+
+```{r}
+params$n
 ```
 
 ## Treatment table
@@ -164,7 +162,6 @@ indata$treatment_table %>%
 
 ```{r, eval=TRUE}
 indata$contract_table %>% 
-  select(-initial_payment, -refund) %>% 
   with_titles( indata$contract_description) %>% 
   flextable_output()  %>% 
   colformat_double(j = c(1,5,6,7), digits = 0) 
@@ -189,7 +186,7 @@ rubriker = c(Behandling = "name", Payment = "contract")
 
 ## Input table
 
-```{r}
+```{r, eval=FALSE}
 mod_table = read_csv("
 table_name, row_name, column_name, value 
 global_table,  firm_discount, value, 0.03
@@ -208,10 +205,8 @@ mod_table %>%
 
 # Results
 
-```{r}
+```{r, eval=FALSE}
 compare_with_variations(indata, mod_table ) %>% 
-  rename(Hazard = p_HU, Length = contract_length, Jämförelse = Treatments, Costdiff. = Cost, QALYdiff. = QALY)  %>% rename(firm_discount = value) %>% 
-  select(-Jämförelse) %>% 
    flextable_output()  
 ```
 

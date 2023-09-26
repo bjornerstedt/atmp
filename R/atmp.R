@@ -63,9 +63,6 @@ server <- function(input, output, session) {
     indata$treatment_table <<- editData(indata$treatment_table, input$treatment_cell_edit, 'treatment')
   })
   
-  file_format = reactive({
-    input$fileformat
-  })
   output$downloadReport <- downloadHandler(
     filename = function() {
       paste('report', sep = '.', switch(
@@ -75,8 +72,8 @@ server <- function(input, output, session) {
     
     content = function(file) {
       src <- normalizePath('report.Rmd')
-      location = "/Users/jonasbjornerstedt/GitHub/atmp/R"
-      src <- file.path(location, "report.Rmd")
+      # location = "/Users/jonasbjornerstedt/GitHub/atmp/R"
+      # src <- file.path(location, "report.Rmd")
       
       # temporarily switch to the temp dir, in case you do not have write
       # permission to the current working directory
@@ -86,7 +83,8 @@ server <- function(input, output, session) {
       
       library(rmarkdown)
       out <- render('report.Rmd', 
-        params = list(n = 30),
+        params = list(n = 45),
+        envir = environment(), 
         output_format = switch(
           input$format,
           PDF = pdf_document(), HTML = html_document(), Word = word_document()

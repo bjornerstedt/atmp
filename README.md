@@ -4,19 +4,15 @@
 
 * How should probabilities be defined?
 
+  * Life table - Omit p_death and it is set with real hazard
+
 * state_table
 
   * If state is omitted, it is set to the next value. Useful for example 3 and for omitting state completely.
-
-  * Omit p_death and it is set with real hazard
-
-  * Life table
   
   * generate QoL if it is omitted
   
   * Två eller flera payments genom kommaseparering. (De gäller för alla perioder som tabellen specificerar, med periods anges hur betalning sker.)
-
-* Separera fältbeskrivningar från data
 
 * Döp om variabler: contract
 
@@ -32,11 +28,13 @@
 
     * Visa rapport i appen.
 
-* Kalla arm new old
-
 * lägg till armval i globals: control_states = 2
 
+* Separera fältbeskrivningar från data
+
 ## Genomfört -------------------------------------------------------------
+
+* Kalla arm new old
 
 * random_state = 0 bör finnas för Jämförelse
 
