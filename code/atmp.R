@@ -18,9 +18,9 @@ check_min_max <- function(indata, table_name) {
     replace_na(list(min_ok = TRUE, max_ok = TRUE)) %>% 
     filter(!min_ok | !max_ok) %>% 
     mutate(
-      message = str_c(sprintf("Value %d is ", value), if_else(!min_ok, "below minimum value", "above maximum value") )
+      message = str_c(sprintf("Value %.2f is ", value), if_else(!min_ok, "below minimum value", "above maximum value") )
     ) %>% 
-    select(table, row, message)
+    select(table, column = title, row, message)
 }
 
 check_indata <- function(indata) {
@@ -43,6 +43,7 @@ check_indata <- function(indata) {
     transmute(
       table = "contracts",
       row = row_number(), 
+      column = "end, health_states",
       message = 
         if_else(end > health_states, 'end is set greater than number of health states', 
                 if_else(end <= start, "end has to be later than start", NA)
@@ -91,7 +92,7 @@ open_indata <- function(infile) {
 load_data <- function(vals, indata, filename) {
   tryCatch(
     {
-      # indata = open_indata(filename)
+      # indata = open_indata(filename) does not work if indata is to be reactive
       indata$treatment_table = read_excel(filename, sheet = "Treatments") 
       indata$contract_table = read_excel(filename, sheet = "Contracts") 
       indata$global_table = read_excel(filename, sheet = "Globals") 
@@ -104,16 +105,16 @@ load_data <- function(vals, indata, filename) {
       stop(safeError(e))
     }
   )
+  indata$errors <- check_indata(indata)
     
-  indata$errors = check_indata(indata)
-  # Reactive values updated from treatment_table
-  # vals$treatment_table <- read_excel(filename, sheet = "Treatments", col_types = 'text') 
-  # vals$contract_table <- read_excel(filename, sheet = "Contracts", col_types = 'text') 
-  
   # DT::coerceValue wants a data.frame
-  vals$treatment_table <- as.data.frame( read_excel(filename, sheet = "Treatments"))
-  vals$contract_table <- as.data.frame(read_excel(filename, sheet = "Contracts"))
-  vals$global_table <- as.data.frame(read_excel(filename, sheet = "Globals"))
+  #       indata <- open_indata(input$upload$datapath)
+  vals$treatment_table <- as.data.frame(indata$treatment_table)
+  vals$contract_table <- as.data.frame(indata$contract_table)
+  vals$global_table <- as.data.frame(indata$global_table)
+  vals$treatment_description <- as.data.frame(indata$treatment_description)
+  vals$contract_description <- as.data.frame(indata$contract_description)
+  vals$errors <- indata$errors
   
   # vals$treatment_table <- indata$treatment_table
   # vals$contract_table <- indata$contract_table

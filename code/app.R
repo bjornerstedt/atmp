@@ -25,8 +25,7 @@ shinyApp(
     ),
     tabsetPanel(
       id = "tabset",
-      tabPanel("Overview",
-               includeMarkdown("overview.md")
+      tabPanel("Overview", includeMarkdown("overview.md")
       ),
       tabPanel("Model",
         h3('Model'),
@@ -47,51 +46,54 @@ shinyApp(
       ),
       
       tabPanel("Input", 
-           h3('Model Input'),
-           p('Modify values in tables'),
-           dt_output('Treatments', 'tro'),
-          dt_output('Payment plans', 'cono'),
-          dt_output('Globals', 'glo'),
-          h4('Download modified data'), 
-          p('Download modified model file to your computer as Excel file.'),
-          downloadButton("download")
+        h3('Model Input'),
+        p('Modify values in tables'),
+        dt_output('Treatments', 'tro'),
+        dt_output('Payment plans', 'cono'),
+        dt_output('Globals', 'glo'),
+        h4('Download modified data'), 
+        p('Download modified model file to your computer as Excel file.'),
+        downloadButton("download")
       ),
       
       tabPanel("Analysis", 
+         div( tableOutput("errors"),
+             style = "color: #FF0000; font-size: 120%"),
+         div(tableOutput("input_errors"),
+             style = "color: #FF0000; font-size: 120%"),
          h3('Analysis of model'),
          p('Payments and QALY for each treatment'),
          tableOutput("partial_analysis") ,
-         div(tableOutput("errors"),
-             style = "color: #FF0000"),
          h4('Comparison'), 
          tableOutput("summary_analysis"),
          hr(),
          h4('Plots over time'),
          column(6, plotOutput('costs')),
          column(6, plotOutput('QALY')),
-         
-        # verbatimTextOutput("print_tr"),
-        # verbatimTextOutput("print_con"),
-        # verbatimTextOutput("print_gl")
       ),
+      
       tabPanel("Report",
-               h3('Generate report'),
-               helpText(),
-               selectInput('x', 'Select form template:',
-                           choices = c("Short", "Complete")),
-               radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
-                            inline = TRUE),
-               downloadButton('downloadReport')
+        h3('Generate report'),
+        helpText(),
+        selectInput('x', 'Select form template:',
+                   choices = c("Short", "Complete")),
+        radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
+                    inline = TRUE),
+        downloadButton('downloadReport')
       ),
-      tabPanel("Help", 
-               includeMarkdown("ATMP-package.md")
+      
+      tabPanel("Help", includeMarkdown("ATMP-package.md")
       )    
     )
   ),
+  
   server = function(input, output, session) {
     theme_set(theme_bw()) 
     
-    vals <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, filename = NULL)
+    vals <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, 
+                           treatment_description = NULL, contract_description = NULL, errors = NULL, 
+                           filename = NULL)
+    
     indata <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, 
                     treatment_description = NULL, contract_description = NULL, errors = NULL)
 
@@ -119,17 +121,6 @@ shinyApp(
       )
     })
     
-    output$print_tr <- renderPrint({
-      vals$treatment_table %>% 
-        with_titles( indata$treatment_description)
-    })
-    output$print_con <- renderPrint({
-      vals$contract_table
-    })
-    output$print_gl <- renderPrint({
-      vals$global_table
-    })
-    
     output$partial_analysis <- renderTable({
       req(vals$filename )
       rubriker = c(Treatment = "name", Arm = "plan", Payment = "contract")
@@ -147,6 +138,14 @@ shinyApp(
       req(indata$errors )
       if (nrow(indata$errors)) {
         indata$errors
+      }
+    })
+    
+    output$input_errors <- renderTable({
+      vals$errors <- check_indata(vals)
+      req(vals$errors )
+      if (nrow(vals$errors)) {
+        vals$errors
       }
     })
     
