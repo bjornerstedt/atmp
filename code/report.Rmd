@@ -143,6 +143,15 @@ ATMP,   4,        0.00,     0.0,    0.02
 # write_xlsx(models, "examples.xlsx")
 # indata = open_indata("examples.xlsx")
 
+state_description = read_csv("
+name, title, value,               min,max, description
+arm, Arm,        ,                0,  1,   Arm specification when there are more than two treatments 
+treatment, Treatment,    ,             ,  ,    Treatment name
+payment, payment,  , ,  ,   Payment plans for treatment stage
+p_prog, Pr.prog, 0,               0,  1,   Probability of progression starting
+p_death, Pr.death,          0,      0,  1,   Probability of dying when progression free
+QoL, QoL, ,         0,  ,   Quality of life
+")
 ```
 
 ```{r}
@@ -152,75 +161,50 @@ params$n
 ## Treatment table
 
 ```{r}
-indata$treatment_table %>% 
-  with_titles( indata$treatment_description) %>% 
-  flextable_output() %>% 
-  colformat_double(j = c(1,6), digits = 0) 
+indata$state_table %>% 
+  with_titles( state_description) %>% 
+  flextable_output() 
 ```
 
 ## Payment table
 
 ```{r, eval=TRUE}
-indata$contract_table %>% 
-  with_titles( indata$contract_description) %>% 
-  flextable_output()  %>% 
-  colformat_double(j = c(1,5,6,7), digits = 0) 
+indata$payment_table %>% 
+  # with_titles( indata$contract_description) %>% 
+  flextable_output()  
 ```
 
 # Analysis
 
 ```{r, knitr.kable.na = ' '}
-rubriker = c(Treatment = "name", Payment = "contract")
- contract_analysis(indata, show_details = TRUE) %>% 
-   select(-plan) %>% rename(any_of(rubriker)) %>% 
+# rubriker = c(Treatment = "name", Payment = "contract")
+#  contract_analysis(indata, show_details = TRUE) %>% 
+#    select(-plan) %>% rename(any_of(rubriker)) %>% 
+  analyse_treatments(indata, show_details = TRUE) %>% 
+ 
   flextable_output() 
+ 
 ```
 
-### Simple result
+### Comparison of treatments
 
 ```{r, knitr.kable.na = ' '}
-rubriker = c(Behandling = "name", Payment = "contract")
- contract_analysis(indata) %>% rename(any_of(rubriker)) %>% 
+# rubriker = c(Behandling = "name", Payment = "contract")
+#  contract_analysis(indata) %>% rename(any_of(rubriker)) %>% 
+   analyse_treatments(indata) %>% 
   flextable_output() 
 ```
 
-## Input table
 
-```{r, eval=FALSE}
-mod_table = read_csv("
-table_name, row_name, column_name, value 
-global_table,  firm_discount, value, 0.03
-global_table,  firm_discount, value, 0.10
-treatment_table,  ATMP, p_HU, 0.00
-treatment_table,  ATMP, p_HU, 0.01
-treatment_table,  ATMP, p_HU, 0.05
-contract_table,  ATMP conditional, contract_length, 1.00
-contract_table,  ATMP conditional, contract_length, 5.00
-contract_table,  ATMP conditional, contract_length, 10.00
-")
-
-mod_table %>% 
-  flextable_output() 
-```
-
-# Results
-
-```{r, eval=FALSE}
-compare_with_variations(indata, mod_table ) %>% 
-   flextable_output()  
-```
-
-
-# Payments over time
+### Payments over time
 
 ```{r}
-df =  contract_analysis(indata, over_time = TRUE) 
-
-df %>% rename(Contract = contract) %>% 
-  ggplot() + 
-  aes(time, Cost, fill = Contract) + 
-  geom_col()  + facet_grid(rows = vars(name)) +
-  labs(x = "")
+plot_payments2(indata)
 ```
 
 
+### Costs over time
+
+```{r}
+plot_QALY(indata)
+```

@@ -36,9 +36,6 @@ name,           title,        value,  min,max,  description
 discount,       HA discount,    0,    0,  .2,
 firm_discount,  Firm discount,  0,    0,  .2,
 time_horizon,   Time horizon,   20,   1,  100,  Time horizon of analysis
-threshold,      ICER threshold, 1,    0,  ,
-active_plan,    Active arm,     0,    0,  ,
-control_plan,   Control arm,    0,    0,  ,
 "
 ) 
 
@@ -60,9 +57,6 @@ name, value
 discount, 0.0
 firm_discount, 0.0
 time_horizon, 20
-threshold, 1
-active_plan, 1
-control_plan, 0
 "
 ) 
 
@@ -161,9 +155,9 @@ Comparison,   2,        0,        0.0,    0.00,
 ")
 
 models$Payments = read_csv("
-payment,tot_payment, cont_payment,     contract_length
-ATMP,10,0,        10
-Comparison,0,0.5, 
+payment,  tot_payment, cont_payment, contract_length, cost_trend
+ATMP,     10,           0,          10,       0.05
+Comparison,0,           0.5,          ,       0.05
 ") 
 
 write_xlsx(models, "Example_B.xlsx")
@@ -176,13 +170,9 @@ models$Globals = read_csv("
 name, value
 discount, 0.03
 firm_discount, 0.03
-threshold, 1
 time_horizon, 20
-active_plan, 1
-control_plan, 0
 "
 ) 
-
 
 models$Treatments = read_csv("
 plan, name, p_HU, p_HD, p_UD, health_states
@@ -198,6 +188,8 @@ plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund
 1, For failure tr.,0,0.5,      0,0,             0,2,6
 0, For comparator tr.,0,0.5,            0,0,             0,1,6
 ")
+
+# Same payments as in previous
 
 write_xlsx(models, "Example_A2.xlsx")
 

@@ -82,11 +82,11 @@ named_list <- function(table, name, value) {
   ret  
 }
 
-create_payment_plans <- function(indata_tr) {
-  globals = named_list(indata_tr$global_table, "name", "value")
-  con_def = named_list(indata_tr$contract_description, "name", "value")
-  cons = indata_tr$state_table %>% 
-    left_join(indata_tr$payment_table) %>% 
+create_payment_plans <- function(state_table_tr, indata) {
+  globals = named_list(indata$global_table, "name", "value")
+  con_def = named_list(indata$contract_description, "name", "value")
+  cons = state_table_tr %>% 
+    left_join(indata$payment_table) %>% 
     mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
     mutate(payment = replace_na(payment, "Death"))
   
@@ -100,18 +100,17 @@ create_payment_plans <- function(indata_tr) {
   ret
 }
 
-analyse_treatment <- function(indata_tr) {
-  state_table = indata_tr$state_table
-  globals = named_list(indata_tr$global_table, "name", "value")
+analyse_treatment <- function(state_table_tr, indata) {
+  globals = named_list(indata$global_table, "name", "value")
 
-  P = transition_matrix(state_table) 
+  P = transition_matrix(state_table_tr) 
   
   states = expected_markov( P, globals$time_horizon)
   
   # CALCULATE COSTS AND QALY
-  costs =  create_payment_plans(indata_tr) * states
+  costs =  create_payment_plans(state_table_tr, indata) * states
   
-  QALY = as.vector( states %*% get_QoL(state_table)) * 
+  QALY = as.vector( states %*% get_QoL(state_table_tr)) * 
     discounting(globals$discount, globals$time_horizon)
   
   # Put into dataset and sum costs over states 
@@ -120,14 +119,14 @@ analyse_treatment <- function(indata_tr) {
     as_tibble() %>% 
     mutate(time = row_number()) %>% 
     pivot_longer(-time, names_to = "start", values_to = "value", names_prefix = "S", names_transform = as.integer) %>% 
-    left_join(state_table %>% select(start, costben = payment)) %>% 
+    left_join(state_table_tr %>% select(start, costben = payment)) %>% 
     filter(!is.na(costben)) %>% 
     group_by(time, costben) %>% 
     summarise(value = sum(value))
   
   ret = bind_rows(ret,
                   bind_rows(costs_df, tibble(time = 1:length(QALY), costben = "QALY", value = QALY) ) %>% 
-                    add_column( treatment = state_table$treatment[[1]], .before = 1)
+                    add_column( treatment = state_table_tr$treatment[[1]], .before = 1)
   )
   ret
 }
@@ -139,8 +138,9 @@ analyse_treatments <- function(indata, over_time = FALSE, show_details = FALSE) 
   treats = state_table_all %>% distinct(treatment) %>% pull()
   ret = tibble()
   for (i in 1:length(treats)) {
-    indata$state_table = state_table_all %>% filter(treatment == treats[i])
-    ret = bind_rows(ret, analyse_treatment(indata))
+    state_table_tr = state_table_all %>% filter(treatment == treats[i])
+    # print(analyse_treatment(state_table_tr, indata))
+    ret = bind_rows(ret, analyse_treatment(state_table_tr, indata))
   }
   if (!over_time) {
     ret = ret %>% group_by(treatment, costben) %>% 
@@ -175,4 +175,39 @@ analyse_treatments <- function(indata, over_time = FALSE, show_details = FALSE) 
   }
 }
 
+load_data <- function(vals, indata, filename) {
+  tryCatch(
+    {
+      # indata = open_indata(filename) does not work if indata is to be reactive
+      indata$treatment_table = read_excel(filename, sheet = "Treatments") 
+      indata$contract_table = read_excel(filename, sheet = "Contracts") 
+      indata$global_table = read_excel(filename, sheet = "Globals") 
+      indata$treatment_description = read_excel(filename, sheet = "Treatment_fields") 
+      indata$contract_description = read_excel(filename, sheet = "Contract_fields")
+      indata$global_description = read_excel(filename, sheet = "Global_fields")
+      indata$state_table = read_excel(filename, sheet = "States")
+      indata$payment_table = read_excel(filename, sheet = "Payments")
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  indata$errors <- check_indata(indata)
+  
+  # DT::coerceValue wants a data.frame
+  #       indata <- open_indata(input$upload$datapath)
+  vals$treatment_table <- as.data.frame(indata$treatment_table)
+  vals$contract_table <- as.data.frame(indata$contract_table)
+  vals$global_table <- as.data.frame(indata$global_table)
+  vals$treatment_description <- as.data.frame(indata$treatment_description)
+  vals$contract_description <- as.data.frame(indata$contract_description)
+  vals$state_table <- as.data.frame(indata$state_table)
+  vals$payment_table <- as.data.frame(indata$payment_table)
+  vals$errors <- indata$errors
+  
+  # vals$treatment_table <- indata$treatment_table
+  # vals$contract_table <- indata$contract_table
+  indata
+}
 

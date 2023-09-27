@@ -193,7 +193,7 @@ state_table %>%
 
 
 ```{r}
-create_payment_plans(exampleA)
+create_payment_plans(exampleA$state_table %>% filter(treatment =="ATMP"), exampleA)
 
 ```
 
