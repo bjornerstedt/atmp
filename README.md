@@ -2,6 +2,8 @@
 
 ## TODO:
 
+* Skapa tester
+
 * How should probabilities be defined?
 
   * Life table - Omit p_death and it is set with real hazard
@@ -24,15 +26,15 @@
 
     * Sannolikheter måste summera till 1
     
-* Lägg till nedladdning av rapport till ATMP app, med indata som parameter
-
-    * Visa rapport i appen.
+* Visa genererad rapport i appen.
 
 * lägg till armval i globals: control_states = 2
 
 * Separera fältbeskrivningar från data
 
 ## Genomfört -------------------------------------------------------------
+
+* Lägg till nedladdning av rapport till ATMP app, med indata som parameter
 
 * Kalla arm new old
 

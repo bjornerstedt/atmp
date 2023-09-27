@@ -119,17 +119,17 @@ plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund
 
 models$States = read_csv("
 treatment,    state,    p_prog,   QoL,  p_death, payment
-ATMP,         1,        0.05,     1.0,    0.01,   ATMP
-ATMP,         2,        1.00,        ,    0.02,   Comparison
+ATMP,         1,        0.05,     1.0,    0.01,   For ATMP tr.
+ATMP,         2,        1.00,        ,    0.02,   For comparator tr.
 ATMP,         6,        0.00,     0.0,    0.00,
-Comparison,   1,        1.00,     1.0,    0.02,   Comparison
+Comparison,   1,        1.00,     1.0,    0.02,   For comparator tr.
 Comparison,   6,        0.00,     0.0,    0.00,   
 ")
 
 models$Payments = read_csv("
-payment,tot_payment, cont_payment,     contract_length
-ATMP,10,0,        10
-Comparison,0,0.5, 
+payment,          tot_payment, cont_payment,  contract_length
+For ATMP tr. ,      10,         0,        10
+For comparator tr., 0,          0.5, 
 ") 
 
 write_xlsx(models, "Example_A.xlsx")

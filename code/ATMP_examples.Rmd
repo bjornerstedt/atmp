@@ -30,6 +30,7 @@ digits = 2
 doShiny = TRUE
 
 source("atmp.R")
+source("atmp_new.R")
 
 
 # Läs in från Excel
@@ -45,7 +46,21 @@ exampleA2 = open_indata("Example_A2.xlsx")
 # Example A
 
 ```{r}
-plot_QoL(exampleA)
+plot_QoL2(exampleA)
+# plot_QoL(exampleA)
+
+```
+
+```{r}
+indata$payment_table
+```
+
+```{r}
+plot_payment_plans2(exampleA)
+```
+
+```{r}
+plot_payment_plans(exampleA)
 ```
 
 Health outcomes for ATMP treatment
@@ -54,12 +69,6 @@ Health outcomes for ATMP treatment
 set.seed(13336)
 
 plot_treatment_paths(exampleA, "ATMP") 
-```
-
-
-
-```{r}
-plot_payment_plans(exampleA)
 ```
 
 ### Tables
@@ -92,13 +101,26 @@ contract_table(exampleA) %>%
   colformat_double(j = c(1,5,6), digits = 0) 
 ```
 
-## Analysis of payment plan
+```{r}
+exampleA$payment_table
+```
+
+# Analysis 
 
 
 ```{r}
-df =  contract_analysis(exampleA, show_details = TRUE) 
+df =  contract_analysis(exampleA, show_details = TRUE)
+df
 ```
 
+
+```{r}
+analyse_treatments(exampleA, show_details = TRUE)
+# %>% flextable_output()
+
+# %>% mutate(arm = (1,0))
+
+```
 
 ```{r}
 df2 = df %>% 
@@ -110,16 +132,30 @@ df2 %>%
 ```
 
 ```{r}
+analyse_treatments(exampleA) 
+
+```
+
+```{r}
 compare_results(df) %>% 
    flextable_output()
 ```
 
 ## Plots over time
 
+```{r}
+plot_payments2(exampleA)
+
+```
+
 
 ```{r}
 
 plot_payments(exampleA)
+```
+
+```{r}
+plot_QALY2(exampleA)
 ```
 
 ```{r}

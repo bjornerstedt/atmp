@@ -1,6 +1,44 @@
 # New functions
 # 
 
+plot_QALY2 <- function(indata) {
+  analyse_treatments(indata, over_time = TRUE) %>% 
+    filter(costben == "QALY") %>% 
+    ggplot() + 
+    aes(time, value, color = treatment) + 
+    geom_line() + labs(color ="Arm", title = "QALY over time")
+}
+
+plot_payments2 <- function(indata) {
+  analyse_treatments(indata, over_time = TRUE) %>% 
+    filter(costben != "QALY") %>% 
+    ggplot() + 
+    aes(time, value, fill = costben) + 
+    geom_col()  + facet_grid(rows = vars(treatment)) + 
+    labs(fill= "Arm", title = "Costs over time")
+}
+
+
+plot_QoL2 <- function(indata) {
+  indata$state_table %>% 
+    create_state_table() %>% 
+    select(treatment, state=start, QoL) %>% 
+    ggplot() +
+    aes(state, QoL) + 
+    geom_col(fill = lightblue) + 
+    # coord_flip() + 
+    facet_grid(rows = vars(treatment)) +
+    labs(title = "QoL of health states")
+}
+
+plot_payment_plans2 <- function(indata) {
+  payment_plans(indata) %>%
+    ggplot() + aes(time, payment) + 
+    geom_col(fill = lightblue) + 
+    facet_grid(rows = vars(payment_plan)) + 
+    labs(title = "Payment plans")
+}
+
 create_state_table = function(indata) {
   indata  %>% group_by(treatment) %>% 
     mutate(QoLstate = pmax(state, QoL), QoLnext = replace_na(lead(QoL), 0)) %>% fill(QoLstate) %>%  # Get QoLstate
@@ -44,9 +82,11 @@ named_list <- function(table, name, value) {
   ret  
 }
 
-create_payment_plans <- function(state_table, payment_table, globals) {
-  cons = state_table %>% 
-    left_join(payment_table) %>% 
+create_payment_plans <- function(indata_tr) {
+  globals = named_list(indata_tr$global_table, "name", "value")
+  con_def = named_list(indata_tr$contract_description, "name", "value")
+  cons = indata_tr$state_table %>% 
+    left_join(indata_tr$payment_table) %>% 
     mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
     mutate(payment = replace_na(payment, "Death"))
   
@@ -60,14 +100,16 @@ create_payment_plans <- function(state_table, payment_table, globals) {
   ret
 }
 
-analyse_treatment <- function(state_table, payment_table, globals) {
-  
+analyse_treatment <- function(indata_tr) {
+  state_table = indata_tr$state_table
+  globals = named_list(indata_tr$global_table, "name", "value")
+
   P = transition_matrix(state_table) 
   
   states = expected_markov( P, globals$time_horizon)
   
   # CALCULATE COSTS AND QALY
-  costs =  create_payment_plans(state_table, payment_table, globals) * states
+  costs =  create_payment_plans(indata_tr) * states
   
   QALY = as.vector( states %*% get_QoL(state_table)) * 
     discounting(globals$discount, globals$time_horizon)
@@ -80,7 +122,8 @@ analyse_treatment <- function(state_table, payment_table, globals) {
     pivot_longer(-time, names_to = "start", values_to = "value", names_prefix = "S", names_transform = as.integer) %>% 
     left_join(state_table %>% select(start, costben = payment)) %>% 
     filter(!is.na(costben)) %>% 
-    group_by(time, costben) %>% summarise(value = sum(value))
+    group_by(time, costben) %>% 
+    summarise(value = sum(value))
   
   ret = bind_rows(ret,
                   bind_rows(costs_df, tibble(time = 1:length(QALY), costben = "QALY", value = QALY) ) %>% 
@@ -89,20 +132,44 @@ analyse_treatment <- function(state_table, payment_table, globals) {
   ret
 }
 
-analyse_treatments <- function(indata, over_time = FALSE) {
-  globals = named_list(indata$global_table, "name", "value")
+analyse_treatments <- function(indata, over_time = FALSE, show_details = FALSE) {
   
   state_table_all = create_state_table(indata$state_table) 
   
   treats = state_table_all %>% distinct(treatment) %>% pull()
   ret = tibble()
   for (i in 1:length(treats)) {
-    state_table_i = state_table_all %>% filter(treatment == treats[i])
-    ret = bind_rows(ret, analyse_treatment(state_table_i, indata$payment_table, globals))
+    indata$state_table = state_table_all %>% filter(treatment == treats[i])
+    ret = bind_rows(ret, analyse_treatment(indata))
   }
   if (!over_time) {
-    ret %>% group_by(treatment, costben) %>% 
-      summarise(value = sum(value))
+    ret = ret %>% group_by(treatment, costben) %>% 
+      summarise(value = sum(value)) %>% 
+      mutate(
+        cost = if_else(costben != "QALY", value, NA) ,
+        QALY = if_else(costben == "QALY", value, NA) ,
+        costben = if_else(costben != "QALY", costben, NA) 
+      ) %>% select(-value) %>% rename(payment = costben)
+    if (!show_details) {
+      global_ea_count = 1
+      df = ret %>% group_by(treatment) %>% 
+        summarise(
+          Cost = sum(cost, na.rm = TRUE) , 
+          QALY = sum(QALY, na.rm = TRUE)
+        )  
+      cross_join(
+          df %>% slice(1:global_ea_count) ,
+          df %>% slice(-(1:global_ea_count))
+        ) %>% 
+        transmute(
+          Treatments = str_c(treatment.x, " - ", treatment.y) ,
+          QALY = QALY.x - QALY.y ,
+          Cost = Cost.x - Cost.y ,
+          ICER = Cost / QALY
+        )
+    } else {
+      ret
+    }
   } else {
     ret
   }

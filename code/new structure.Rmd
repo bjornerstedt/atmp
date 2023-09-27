@@ -5,6 +5,29 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+# Översikt
+
+Model:
+
+* plot_QoL(indata)
+
+* plot_payment_plans(indata)
+
+# Analysis
+
+* contract_analysis(vals, show_details = TRUE) - analyse_treatments
+
+* plot_payments(indata)
+
+* plot_QALY(indata)
+
+Funktioner:
+
+* check_indata(indata)
+
+Tutorial:
+
+* plot_treatment_paths(indata, treatment_name, reps = 8, T = 20) 
 
 ```{r setup, include=FALSE}
 library(tidyverse)
@@ -170,20 +193,21 @@ state_table %>%
 
 
 ```{r}
-create_payment_plans(state_table, payment_table, globals)
+create_payment_plans(exampleA)
 
 ```
 
 # Results
 
+does not summarise
 ```{r}
-
-analyse_treatment(state_table, payment_table, globals)  %>% flextable_output()
+analyse_treatments(exampleA)  %>% flextable_output()
 
 ```
 
 ```{r}
-analyse_treatments(exampleA, over_time = FALSE) %>% flextable_output()
+source("atmp_new.R")
+analyse_treatments(exampleA, show_details = TRUE) %>% flextable_output()
 ```
 ```{r}
 contract_analysis(exampleA, show_details = TRUE)  %>% flextable_output()
