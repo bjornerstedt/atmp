@@ -46,7 +46,7 @@ exampleA2 = open_indata("Example_A2.xlsx")
 # Example A
 
 ```{r}
-plot_QoL2(exampleA)
+plot_QoL(exampleA)
 # plot_QoL(exampleA)
 
 ```

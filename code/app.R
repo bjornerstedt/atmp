@@ -6,7 +6,6 @@ library(readxl)
 library(rmarkdown)
 
 source("atmp.R")
-source("atmp_new.R")
 
 options(dplyr.summarise.inform = FALSE)
 
@@ -104,7 +103,7 @@ shinyApp(
 
     
     observeEvent(input$upload, {
-      indata <- load_data(vals, indata, input$upload$datapath)
+      indata <- open_indata(input$upload$datapath, vals, indata)
       vals$filename <- input$upload$name
     })
 
@@ -114,7 +113,7 @@ shinyApp(
         "Example A2" = "Example_A2.xlsx",
         "Example B" = "Example_B.xlsx"
       )
-      indata <- load_data(vals, indata, filenames[[input$example]])
+      indata <- open_indata(filenames[[input$example]], vals, indata)
 
       vals$filename <- filenames[[input$example]]
     })
@@ -155,7 +154,7 @@ shinyApp(
 
     output$QoL <- renderPlot({
       req(vals$filename )
-      plot_QoL2(vals)
+      plot_QoL(vals)
     })
     
     output$payment_plans <- renderPlot({

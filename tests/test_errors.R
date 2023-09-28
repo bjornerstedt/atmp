@@ -2,7 +2,7 @@ library(tidyverse)
 source('atmp.R')
 source('atmp_new.R')
 
-indata = load_data(filename = "example_A.xlsx")
+indata = open_indata("example_A.xlsx")
 
 payment_description = read_csv(show_col_types = FALSE, "
 name, title, value,               min,max, description
