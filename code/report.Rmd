@@ -199,10 +199,10 @@ analyse_treatments(indata, show_details = TRUE) %>%
 # Plots over time
 
 ```{r}
-plot_payments2(indata)
+plot_costs(indata)
 ```
 
 
 ```{r}
-plot_QALY2(indata)
+plot_QALY(indata)
 ```

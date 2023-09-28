@@ -17,7 +17,7 @@ Model:
 
 * contract_analysis(vals, show_details = TRUE) - analyse_treatments
 
-* plot_payments(indata)
+* plot_costs(indata)
 
 * plot_QALY(indata)
 

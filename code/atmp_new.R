@@ -1,23 +1,6 @@
 # New functions
 # 
 
-plot_QALY2 <- function(indata) {
-  analyse_treatments(indata, over_time = TRUE) %>% 
-    filter(costben == "QALY") %>% 
-    ggplot() + 
-    aes(time, value, color = treatment) + 
-    geom_line() + labs(color ="Arm", title = "QALY over time")
-}
-
-plot_payments2 <- function(indata) {
-  analyse_treatments(indata, over_time = TRUE) %>% 
-    filter(costben != "QALY") %>% 
-    ggplot() + 
-    aes(time, value, fill = costben) + 
-    geom_col()  + facet_grid(rows = vars(treatment)) + 
-    labs(fill= "Arm", title = "Costs over time")
-}
-
 
 plot_QoL2 <- function(indata) {
   indata$state_table %>% 
@@ -31,27 +14,31 @@ plot_QoL2 <- function(indata) {
     labs(title = "QoL of health states")
 }
 
-plot_payment_plans2 <- function(indata) {
-  payment_plans2(indata) %>%
-    ggplot() + aes(time, payment) + 
-    geom_col(fill = lightblue) + 
-    facet_grid(rows = vars(payment_plan)) + 
-    labs(title = "Payment plans")
-}
-
 # Get payments for all payment plans. Used in displaying model inputs
-payment_plans2 <- function(indata) {
+plot_payment_plans <- function(indata) {
   globals = named_list(indata$global_table, "name", "value")
-  con_def = named_list(indata$contract_description, "name", "value")
+  con_def = named_list(indata$payment_description, "name", "value")
   
   indata$payment_table %>% 
+    left_join(by = join_by(payment),
+              indata$state_table %>% 
+                select(payment, start = state)
+    ) %>% 
+    # Do not distinguish between continuous payments with different start states:
+    mutate(start = if_else(tot_payment > 0, start, 1)) %>% 
+    distinct() %>% 
     transpose() %>% 
     map( ~modifyList(con_def, .)) %>% 
     map(~payment_plan(., globals)) %>% 
     setNames(indata$payment_table %>% pull(payment) ) %>% 
     as_tibble() %>% 
     mutate(time = row_number()) %>% 
-    pivot_longer(-time, names_to = "payment_plan", values_to = "payment")
+    pivot_longer(-time, names_to = "payment_plan", values_to = "payment") %>%
+    
+    ggplot() + aes(time, payment) + 
+      geom_col(fill = lightblue) + 
+      facet_grid(rows = vars(payment_plan)) + 
+      labs(title = "Payment plans")
 }
 
 create_state_table = function(indata) {
@@ -70,7 +57,7 @@ create_state_table = function(indata) {
 transition_matrix <- function(state_table) {
   state_table = state_table
   health_states = max(state_table$start)
-  P = matrix(0, health_states, health_states)
+  P = suppressWarnings(matrix(0.0, health_states, health_states))
   for (i in 1:(health_states-1)) {
     P[i, i] = 1 - state_table$p_prog[i] 
     P[i, i + 1] = state_table$p_prog[i] - state_table$p_death[i]
@@ -99,7 +86,7 @@ named_list <- function(table, name, value) {
 
 create_payment_plans <- function(state_table_tr, indata) {
   globals = named_list(indata$global_table, "name", "value")
-  con_def = named_list(indata$contract_description, "name", "value")
+  con_def = named_list(indata$payment_description, "name", "value")
   cons = state_table_tr %>% 
     left_join(indata$payment_table, by = join_by(payment)) %>% 
     mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
@@ -193,17 +180,12 @@ analyse_treatments <- function(indata, over_time = FALSE, show_details = FALSE) 
 load_data <- function(vals = list(), indata = list(), filename) {
   tryCatch(
     {
-      # indata = open_indata(filename) does not work if indata is to be reactive
-      indata$treatment_table = read_excel(filename, sheet = "Treatments") 
-      indata$contract_table = read_excel(filename, sheet = "Contracts") 
-      indata$global_table = read_excel(filename, sheet = "Globals") 
       indata$state_description = read_excel(filename, sheet = "State_fields") 
       indata$payment_description = read_excel(filename, sheet = "Payment_fields") 
-      indata$treatment_description = read_excel(filename, sheet = "Treatment_fields") 
-      indata$contract_description = read_excel(filename, sheet = "Contract_fields")
-      indata$global_description = read_excel(filename, sheet = "Global_fields")
+      indata$global_table = read_excel(filename, sheet = "Globals") 
       indata$state_table = read_excel(filename, sheet = "States")
       indata$payment_table = read_excel(filename, sheet = "Payments")
+      indata$global_description = read_excel(filename, sheet = "Global_fields")
     },
     error = function(e) {
       # return a safeError if a parsing error occurs
@@ -213,20 +195,14 @@ load_data <- function(vals = list(), indata = list(), filename) {
   indata$errors <- NA # check_indata(indata)
   
   # DT::coerceValue wants a data.frame
-  #       indata <- open_indata(input$upload$datapath)
-  vals$treatment_table <- as.data.frame(indata$treatment_table)
-  vals$contract_table <- as.data.frame(indata$contract_table)
-  vals$global_table <- as.data.frame(indata$global_table)
-  vals$treatment_description <- as.data.frame(indata$treatment_description)
-  vals$contract_description <- as.data.frame(indata$contract_description)
-  vals$state_description <- as.data.frame(indata$state_description)
-  vals$payment_description <- as.data.frame(indata$payment_description)
   vals$state_table <- as.data.frame(indata$state_table)
   vals$payment_table <- as.data.frame(indata$payment_table)
+  vals$global_table <- as.data.frame(indata$global_table)
+  vals$state_description <- as.data.frame(indata$state_description)
+  vals$payment_description <- as.data.frame(indata$payment_description)
+  vals$global_description <- as.data.frame(indata$global_description)
   vals$errors <- indata$errors
   
-  # vals$treatment_table <- indata$treatment_table
-  # vals$contract_table <- indata$contract_table
   indata
 }
 

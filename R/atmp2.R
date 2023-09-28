@@ -243,7 +243,7 @@ shinyApp(
                                          indata$treatment_table = vals$treatment_table 
                                          indata$contract_table = vals$contract_table 
                                          indata$global_table = vals$global_table 
-                                         write_xlsx(indata, file)
+                                         write_xlsx(reactiveValuesToList(indata), file)
                                        },
                                        contentType="application/xlsx" 
                                        )

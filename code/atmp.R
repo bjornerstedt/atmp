@@ -148,26 +148,47 @@ print_tansitions <- function(indata, treatment_name) {
     colformat_double(digits = 2, na_str = " ") 
 }
 
+# Get payments for all payment plans. Used in displaying model inputs
 plot_payment_plans <- function(indata) {
-  payment_plans(indata) %>%
+  globals = named_list(indata$global_table, "name", "value")
+  con_def = named_list(indata$payment_description, "name", "value")
+  
+  indata$payment_table %>% 
+    left_join(by = join_by(payment),
+              indata$state_table %>% 
+                select(payment, start = state)
+    ) %>% 
+    # Do not distinguish between continuous payments with different start states:
+    mutate(start = if_else(tot_payment > 0, start, 1)) %>% 
+    distinct() %>% 
+    transpose() %>% 
+    map( ~modifyList(con_def, .)) %>% 
+    map(~payment_plan(., globals)) %>% 
+    setNames(indata$payment_table %>% pull(payment) ) %>% 
+    as_tibble() %>% 
+    mutate(time = row_number()) %>% 
+    pivot_longer(-time, names_to = "payment_plan", values_to = "payment") %>%
+    
     ggplot() + aes(time, payment) + 
     geom_col(fill = lightblue) + 
     facet_grid(rows = vars(payment_plan)) + 
     labs(title = "Payment plans")
 }
 
-plot_payments <- function(indata) {
-  contract_analysis(indata, over_time = TRUE) %>% 
+plot_costs <- function(indata) {
+  analyse_treatments(indata, over_time = TRUE) %>% 
+    filter(costben != "QALY") %>% 
     ggplot() + 
-    aes(time, Cost, fill = contract) + 
-    geom_col()  + facet_grid(rows = vars(name)) + 
+    aes(time, value, fill = costben) + 
+    geom_col()  + facet_grid(rows = vars(treatment)) + 
     labs(fill= "Arm", title = "Costs over time")
 }
 
 plot_QALY <- function(indata) {
-  contract_analysis(indata, over_time = TRUE) %>% 
-    filter(!is.na(QALY)) %>% ggplot() + 
-    aes(time, QALY, color = name) + 
+  analyse_treatments(indata, over_time = TRUE) %>% 
+    filter(costben == "QALY") %>% 
+    ggplot() + 
+    aes(time, value, color = treatment) + 
     geom_line() + labs(color ="Arm", title = "QALY over time")
 }
 

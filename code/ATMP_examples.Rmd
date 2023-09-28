@@ -54,7 +54,7 @@ plot_QoL2(exampleA)
 
 
 ```{r}
-plot_payment_plans2(exampleA)
+plot_payment_plans(exampleA)
 ```
 
 ```{r}
@@ -140,14 +140,14 @@ compare_results(df) %>%
 ## Plots over time
 
 ```{r}
-plot_payments2(exampleA)
+plot_costs(exampleA)
 
 ```
 
 
 ```{r}
 
-plot_payments(exampleA)
+plot_costs(exampleA)
 ```
 
 ```{r}
@@ -222,7 +222,7 @@ compare_results(df) %>%
 
 ```{r}
 
-plot_payments(exampleA2)
+plot_costs(exampleA2)
 ```
 
 ```{r}
@@ -303,7 +303,7 @@ compare_results(df) %>%
 
 ```{r}
 
-plot_payments(exampleB)
+plot_costs(exampleB)
 ```
 
 ```{r}

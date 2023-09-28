@@ -8,6 +8,8 @@ library(rmarkdown)
 source("atmp.R")
 source("atmp_new.R")
 
+options(dplyr.summarise.inform = FALSE)
+
 dt_output = function(title, id) {
   fluidRow(column(
     12, h4( title),
@@ -158,17 +160,17 @@ shinyApp(
     
     output$payment_plans <- renderPlot({
       req(vals$filename )
-      plot_payment_plans2(vals)
+      plot_payment_plans(vals)
     })
     
     output$costs <- renderPlot({
       req(vals$filename )
-      plot_payments2(vals)
+      plot_costs(vals)
     })
     
     output$QALY <- renderPlot({
       req(vals$filename )
-      plot_QALY2(indata)
+      plot_QALY(indata)
     })
     
     
@@ -239,7 +241,24 @@ shinyApp(
       indata$global_table = vals$global_table
       indata
     })    
-        
+
+    # DOWNLOAD
+    
+    output$download <- downloadHandler(vals$filename, 
+                                       content = function(file) {
+                                         models = isolate(list(
+                                           States = vals$state_table ,
+                                           Payments = vals$payment_table,
+                                           Globals = vals$global_table,
+                                           State_fields = vals$state_description,
+                                           Payment_fields = vals$payment_description,
+                                           Global_fields = vals$global_description
+                                         ))
+                                         write_xlsx(models, file)
+                                       },
+                                       contentType="application/xlsx" 
+    )
+    
     output$downloadReport <- downloadHandler(
       filename = function() {
         paste('report', sep = '.', switch(
