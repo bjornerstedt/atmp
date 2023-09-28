@@ -1,9 +1,9 @@
 ---
 title: "ATMP analysis"
 params:
-  n:
-    label: "Year"
-    value: 30
+  model:
+    label: "Model"
+    value: "none"
 ---
 
 ```{r setup, include=FALSE}
@@ -154,10 +154,8 @@ QoL, QoL, ,         0,  ,   Quality of life
 ")
 ```
 
-```{r}
-params$n
-```
 
+# Analysis of `r params$model`
 ## Treatment table
 
 ```{r}
@@ -170,41 +168,41 @@ indata$state_table %>%
 
 ```{r, eval=TRUE}
 indata$payment_table %>% 
-  # with_titles( indata$contract_description) %>% 
+  with_titles( indata$payment_description) %>% 
+  flextable_output()  
+```
+
+## Globals
+
+```{r, eval=TRUE}
+indata$global_table %>% 
   flextable_output()  
 ```
 
 # Analysis
 
+Payments and QALY for each treatment
+
 ```{r, knitr.kable.na = ' '}
-# rubriker = c(Treatment = "name", Payment = "contract")
-#  contract_analysis(indata, show_details = TRUE) %>% 
-#    select(-plan) %>% rename(any_of(rubriker)) %>% 
-  analyse_treatments(indata, show_details = TRUE) %>% 
- 
+analyse_treatments(indata, show_details = TRUE) %>% 
   flextable_output() 
  
 ```
 
-### Comparison of treatments
+## Summary
 
 ```{r, knitr.kable.na = ' '}
-# rubriker = c(Behandling = "name", Payment = "contract")
-#  contract_analysis(indata) %>% rename(any_of(rubriker)) %>% 
    analyse_treatments(indata) %>% 
   flextable_output() 
 ```
 
-
-### Payments over time
+# Plots over time
 
 ```{r}
 plot_payments2(indata)
 ```
 
 
-### Costs over time
-
 ```{r}
-plot_QALY(indata)
+plot_QALY2(indata)
 ```

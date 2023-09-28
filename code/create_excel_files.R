@@ -33,7 +33,6 @@ aggregate_failure, Agg. Fail, 0,  0,  1,  Threshold share of population for aggr
 
 payment_description = read_csv(show_col_types = FALSE, "
 name, title, value,               min,max, description
-plan, Arm, ,                       ,  ,  Arm combining Treatment and Payment 
 payment, Payment, ,              ,  ,  Payment planname
 tot_payment,  Tot. payment, 0,    0,  ,  Total payment or yearly payment if payment is continuous
 cont_payment, Cont. payment, 0,   0,  ,  Payment each year that the patient is alive (traditional) 
@@ -53,13 +52,13 @@ time_horizon,   Time horizon,   20,   1,  100,  Time horizon of analysis
 ) 
 
 state_description = read_csv(show_col_types = FALSE, "
-name, title, value,               min,max, description
-arm, Arm,        ,                0,  1,   Arm specification when there are more than two treatments 
-treatment, Treatment,    ,             ,  ,    Treatment name
-payment, payment,  , ,  ,   Payment plans for treatment stage
-p_prog, Pr.prog, 0,               0,  1,   Probability of progression starting
-p_death, Pr.death,          0,      0,  1,   Probability of dying when progression free
-QoL, QoL, ,         0,  ,   Quality of life
+name, title,          value,    min,max,   description
+treatment, Treatment,      ,       ,   ,   Treatment name
+payment, Payment,          ,       ,   ,   Payment plans for treatment stage
+state,     State           ,      1,  ,    Health state
+p_prog, Pr.prog,          0,      0,  1,   Probability of progression starting
+p_death, Pr.death,        0,      0,  1,   Probability of dying 
+QoL, QoL,                  ,      0,  1,   Quality of life
 ")
 
 #

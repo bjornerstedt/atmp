@@ -190,7 +190,7 @@ analyse_treatments <- function(indata, over_time = FALSE, show_details = FALSE) 
   }
 }
 
-load_data <- function(vals, indata, filename) {
+load_data <- function(vals = list(), indata = list(), filename) {
   tryCatch(
     {
       # indata = open_indata(filename) does not work if indata is to be reactive
@@ -210,7 +210,7 @@ load_data <- function(vals, indata, filename) {
       stop(safeError(e))
     }
   )
-  indata$errors <- check_indata(indata)
+  indata$errors <- NA # check_indata(indata)
   
   # DT::coerceValue wants a data.frame
   #       indata <- open_indata(input$upload$datapath)
@@ -219,6 +219,8 @@ load_data <- function(vals, indata, filename) {
   vals$global_table <- as.data.frame(indata$global_table)
   vals$treatment_description <- as.data.frame(indata$treatment_description)
   vals$contract_description <- as.data.frame(indata$contract_description)
+  vals$state_description <- as.data.frame(indata$state_description)
+  vals$payment_description <- as.data.frame(indata$payment_description)
   vals$state_table <- as.data.frame(indata$state_table)
   vals$payment_table <- as.data.frame(indata$payment_table)
   vals$errors <- indata$errors

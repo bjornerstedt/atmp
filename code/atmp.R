@@ -4,9 +4,9 @@ library(tidyverse)
 #   For columns in dataset, check that each value is between min and max.
 #   If not, save message indicating table, column, row and which limit fails
 check_min_max <- function(indata, table_name) {
-  table = indata[[str_c(table_name, '_table')]]
+  table = indata[[str_c(table_name, '_table')]] 
   left_join(by = join_by(colname),
-            table %>% select(-plan) %>% pivot_longer(-name, names_to = 'colname') ,
+            table %>% pivot_longer(-where(negate(is.numeric)) , names_to = 'colname') ,
             indata[[str_c(table_name, '_description')]] %>% select(colname = name, title, min, max)
   ) %>% 
     mutate(
@@ -26,44 +26,11 @@ check_min_max <- function(indata, table_name) {
 check_indata <- function(indata) {
   
   errors = bind_rows(
-    check_min_max(indata, 'treatment'),
-    check_min_max(indata, 'contract')
+    check_min_max(indata, 'state'),
+    check_min_max(indata, 'payment')
   )
-  
-  #   Contracts
-  #     end should be after beginning
-  #     Not both tot_payment > 0 and cont_payment > 0
-  #   Joint
-  #     contract$end <= treatment$health_states for each plan in treatments
-  start = 1 # default value if column start does not exist
-  errors2 = left_join(by = join_by(plan),
-    indata$contract_table , 
-    indata$treatment_table %>% select(plan, health_states)
-  ) %>% 
-    transmute(
-      table = "contracts",
-      row = row_number(), 
-      column = "end, health_states",
-      message = 
-        if_else(end > health_states, 'end is set greater than number of health states', 
-                if_else(end <= start, "end has to be later than start", NA)
-        )
-    ) %>% 
-    filter(!is.na(message))
-  bind_rows(errors, errors2)
-  
-  # Check for other logical inconsistencies 
-  #   Treatments
-  #     QoLend should be greater than QoLstart
-  #   
-  #   States
-  #     treatment and payment exist, except last entry in each treatment (ie. death)
-  #     payment exists in payments table
-  #     probabilities add up 
-  #     states start at 1, end at higher value and is increasing for is.na
-  #     if QoL does not exist, add column with 1 for first row and 0 for last in each group
-  #     
-}  
+  errors
+}
 
 # Open all tables in Excelblad as list of tibbles, with list of errors 
 # as a tibble

@@ -58,10 +58,10 @@ shinyApp(
       ),
       
       tabPanel("Analysis", 
-         # div( tableOutput("errors"),
-         #     style = "color: #FF0000; font-size: 120%"),
-         # div(tableOutput("input_errors"),
-         #     style = "color: #FF0000; font-size: 120%"),
+         div( tableOutput("errors"),
+             style = "color: #FF0000; font-size: 120%"),
+         div(tableOutput("input_errors"),
+             style = "color: #FF0000; font-size: 120%"),
          h3('Analysis of model'),
          p('Payments and QALY for each treatment'),
          tableOutput("partial_analysis") ,
@@ -75,9 +75,9 @@ shinyApp(
       
       tabPanel("Report",
         h3('Generate report'),
-        helpText(),
-        selectInput('x', 'Select form template:',
-                   choices = c("Short", "Complete")),
+        helpText("Save a report in the selected ouput format"),
+        # selectInput('x', 'Select form template:',
+        #            choices = c("Short", "Complete")),
         radioButtons('format', 'Document format', c('PDF', 'HTML', 'Word'),
                     inline = TRUE),
         downloadButton('downloadReport')
@@ -178,12 +178,12 @@ shinyApp(
     
     # Treatments
     output$tro =  
-      # with_titles( indata$treatment_description) %>%
       DT::renderDataTable( {
         req(vals$filename )
         vals$state_table
         }, selection = 'none', colnames=get_titles(vals$state_table, indata$state_description), 
-                    editable =list(target = 'cell', disable = list(columns = c(0))), options = dtoptions, rownames = FALSE)
+                    editable =list(target = 'cell', disable = list(columns = c(0, ncol(vals$state_table)-1))),  # Last column is key var to payments
+          options = dtoptions, rownames = FALSE)
 
     proxy_tr = dataTableProxy('tro')
     
@@ -196,10 +196,8 @@ shinyApp(
       replaceData(proxy_tr, vals$state_table, resetPaging = FALSE, rownames = FALSE)
     })
     
-    # Contracts
+    # Payments
     output$cono = 
-      # vals$contract_table %>% 
-      # with_titles( indata$contract_description) %>%
       DT::renderDataTable({
         req(vals$filename )
         vals$payment_table
@@ -261,7 +259,7 @@ shinyApp(
         file.copy(src, 'report.Rmd', overwrite = TRUE)
         indata = get_indata()
         out <- render('report.Rmd', 
-                      params = list(n = 45),
+                      params = list(model = vals$filename),
                       envir = environment(), 
                       output_format = switch(
                         input$format,
