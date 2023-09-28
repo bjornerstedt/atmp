@@ -6,6 +6,7 @@ library(readxl)
 library(rmarkdown)
 
 source("atmp.R")
+source("atmp_new.R")
 
 dt_output = function(title, id) {
   fluidRow(column(
@@ -57,14 +58,14 @@ shinyApp(
       ),
       
       tabPanel("Analysis", 
-         div( tableOutput("errors"),
-             style = "color: #FF0000; font-size: 120%"),
-         div(tableOutput("input_errors"),
-             style = "color: #FF0000; font-size: 120%"),
+         # div( tableOutput("errors"),
+         #     style = "color: #FF0000; font-size: 120%"),
+         # div(tableOutput("input_errors"),
+         #     style = "color: #FF0000; font-size: 120%"),
          h3('Analysis of model'),
          p('Payments and QALY for each treatment'),
          tableOutput("partial_analysis") ,
-         h4('Comparison'), 
+         h4('Summary'), 
          tableOutput("summary_analysis"),
          hr(),
          h4('Plots over time'),
@@ -91,11 +92,13 @@ shinyApp(
     theme_set(theme_bw()) 
     
     vals <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, 
+                           state_table = NULL, payment_table = NULL, 
                            treatment_description = NULL, contract_description = NULL, errors = NULL, 
                            filename = NULL)
     
     indata <- reactiveValues(treatment_table = NULL, contract_table = NULL, global_table = NULL, 
-                    treatment_description = NULL, contract_description = NULL, errors = NULL)
+                           state_table = NULL, payment_table = NULL, 
+                           treatment_description = NULL, contract_description = NULL, errors = NULL)
 
     
     observeEvent(input$upload, {
@@ -123,15 +126,14 @@ shinyApp(
     
     output$partial_analysis <- renderTable({
       req(vals$filename )
-      rubriker = c(Treatment = "name", Arm = "plan", Payment = "contract")
-      contract_analysis(vals, show_details = TRUE) %>%
-        # select(-plan) %>% 
-        rename(any_of(rubriker))
+      analyse_treatments(get_user_input(), show_details = TRUE)
     }, na = "")
+    
+    get_user_input = reactive(vals)
     
     output$summary_analysis <- renderTable({
       req(vals$filename )
-      contract_analysis(vals)
+      analyse_treatments(get_user_input())
     })
     
     output$errors <- renderTable({
@@ -140,7 +142,7 @@ shinyApp(
         indata$errors
       }
     })
-    
+
     output$input_errors <- renderTable({
       vals$errors <- check_indata(vals)
       req(vals$errors )
@@ -148,25 +150,25 @@ shinyApp(
         vals$errors
       }
     })
-    
+
     output$QoL <- renderPlot({
       req(vals$filename )
-      plot_QoL(vals)
+      plot_QoL2(vals)
     })
     
     output$payment_plans <- renderPlot({
       req(vals$filename )
-      plot_payment_plans(vals)
+      plot_payment_plans2(vals)
     })
     
     output$costs <- renderPlot({
       req(vals$filename )
-      plot_payments(vals)
+      plot_payments2(vals)
     })
     
     output$QALY <- renderPlot({
       req(vals$filename )
-      plot_QALY(vals)
+      plot_QALY2(indata)
     })
     
     
@@ -179,9 +181,9 @@ shinyApp(
       # with_titles( indata$treatment_description) %>%
       DT::renderDataTable( {
         req(vals$filename )
-        vals$treatment_table
-        }, selection = 'none', colnames=get_titles(vals$treatment_table, indata$treatment_description), 
-                    editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
+        vals$state_table
+        }, selection = 'none', colnames=get_titles(vals$state_table, indata$state_description), 
+                    editable =list(target = 'cell', disable = list(columns = c(0))), options = dtoptions, rownames = FALSE)
 
     proxy_tr = dataTableProxy('tro')
     
@@ -190,8 +192,8 @@ shinyApp(
       i = info$row
       j = info$col + 1
       v = info$value
-      vals$treatment_table[i, j] <<- DT:::coerceValue(v, vals$treatment_table[i, j])
-      replaceData(proxy_tr, vals$treatment_table, resetPaging = FALSE, rownames = FALSE)
+      vals$state_table[i, j] <<- DT:::coerceValue(v, vals$state_table[i, j])
+      replaceData(proxy_tr, vals$state_table, resetPaging = FALSE, rownames = FALSE)
     })
     
     # Contracts
@@ -200,9 +202,9 @@ shinyApp(
       # with_titles( indata$contract_description) %>%
       DT::renderDataTable({
         req(vals$filename )
-        vals$contract_table
-        } , selection = 'none', colnames=get_titles(vals$contract_table, indata$contract_description), 
-                    editable =list(target = 'cell', disable = list(columns = c(0,1))), options = dtoptions, rownames = FALSE)
+        vals$payment_table
+        } , selection = 'none', colnames=get_titles(vals$payment_table, indata$payment_description), 
+                    editable =list(target = 'cell', disable = list(columns = c(0))), options = dtoptions, rownames = FALSE)
     
     proxy_con = dataTableProxy('cono')
     
@@ -211,8 +213,8 @@ shinyApp(
       i = info$row
       j = info$col + 1
       v = info$value
-      vals$contract_table[i, j] <<- DT:::coerceValue(v, vals$contract_table[i, j])
-      replaceData(proxy_con, vals$contract_table, resetPaging = FALSE, rownames = FALSE)
+      vals$payment_table[i, j] <<- DT:::coerceValue(v, vals$payment_table[i, j])
+      replaceData(proxy_con, vals$payment_table, resetPaging = FALSE, rownames = FALSE)
     })
     
     # Globals
@@ -234,8 +236,8 @@ shinyApp(
     # DOWNLOAD
     
     get_indata = reactive({
-      indata$treatment_table = vals$treatment_table
-      indata$contract_table = vals$contract_table
+      indata$state_table = vals$state_table
+      indata$payment_table = vals$payment_table
       indata$global_table = vals$global_table
       indata
     })    

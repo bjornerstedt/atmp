@@ -67,21 +67,21 @@ check_indata <- function(indata) {
 
 # Open all tables in Excelblad as list of tibbles, with list of errors 
 # as a tibble
-open_indata <- function(infile) {
+open_indata <- function(filename) {
   indata = list(
-    treatment_table = read_excel(infile, sheet = "Treatments") ,
-    contract_table = read_excel(infile, sheet = "Contracts") ,
-    global_table = read_excel(infile, sheet = "Globals") ,
-    treatment_description = read_excel(infile, sheet = "Treatment_fields") ,
-    contract_description = read_excel(infile, sheet = "Contract_fields")
+    treatment_table = read_excel(filename, sheet = "Treatments") ,
+    contract_table = read_excel(filename, sheet = "Contracts") ,
+    global_table = read_excel(filename, sheet = "Globals") ,
+    treatment_description = read_excel(filename, sheet = "Treatment_fields") ,
+    contract_description = read_excel(filename, sheet = "Contract_fields") ,
+    state_table = read_excel(filename, sheet = "States") ,
+    payment_table = read_excel(filename, sheet = "Payments") ,
+    state_description = read_excel(filename, sheet = "State_fields") ,
+    payment_description = read_excel(filename, sheet = "Payment_fields") 
   )
   # Data tables that do not exist in all example excel sheets
-  if ("States" %in% excel_sheets(infile)) {
-    indata$state_table = read_excel(infile, sheet = "States")
-    indata$payment_table = read_excel(infile, sheet = "Payments")
-  }
-  if ("Global_fields" %in% excel_sheets(infile)) {
-    indata$global_description = read_excel(infile, sheet = "Global_fields")
+  if ("Global_fields" %in% excel_sheets(filename)) {
+    indata$global_description = read_excel(filename, sheet = "Global_fields")
     # indata$state_table = read_excel(infile, sheet = "States")
   }
   indata$errors = check_indata(indata)
@@ -90,31 +90,26 @@ open_indata <- function(infile) {
 
 # Load data into reactiveValues object
 load_data <- function(vals, indata, filename) {
-  tryCatch(
-    {
+    file_indata = open_indata(filename)
       # indata = open_indata(filename) does not work if indata is to be reactive
       indata$treatment_table = read_excel(filename, sheet = "Treatments") 
       indata$contract_table = read_excel(filename, sheet = "Contracts") 
       indata$global_table = read_excel(filename, sheet = "Globals") 
       indata$treatment_description = read_excel(filename, sheet = "Treatment_fields") 
+      indata$payment_description = read_excel(filename, sheet = "Payment_fields") 
       indata$contract_description = read_excel(filename, sheet = "Contract_fields")
       indata$global_description = read_excel(filename, sheet = "Global_fields")
-    },
-    error = function(e) {
-      # return a safeError if a parsing error occurs
-      stop(safeError(e))
-    }
-  )
+  
   indata$errors <- check_indata(indata)
     
   # DT::coerceValue wants a data.frame
   #       indata <- open_indata(input$upload$datapath)
-  vals$treatment_table <- as.data.frame(indata$treatment_table)
-  vals$contract_table <- as.data.frame(indata$contract_table)
-  vals$global_table <- as.data.frame(indata$global_table)
-  vals$treatment_description <- as.data.frame(indata$treatment_description)
-  vals$contract_description <- as.data.frame(indata$contract_description)
-  vals$errors <- indata$errors
+  vals$treatment_table <- as.data.frame(file_indata$treatment_table)
+  vals$contract_table <- as.data.frame(file_indata$contract_table)
+  vals$global_table <- as.data.frame(file_indata$global_table)
+  vals$treatment_description <- as.data.frame(file_indata$treatment_description)
+  vals$contract_description <- as.data.frame(file_indata$contract_description)
+  vals$errors <- file_indata$errors
   
   # vals$treatment_table <- indata$treatment_table
   # vals$contract_table <- indata$contract_table

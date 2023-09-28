@@ -32,11 +32,26 @@ plot_QoL2 <- function(indata) {
 }
 
 plot_payment_plans2 <- function(indata) {
-  payment_plans(indata) %>%
+  payment_plans2(indata) %>%
     ggplot() + aes(time, payment) + 
     geom_col(fill = lightblue) + 
     facet_grid(rows = vars(payment_plan)) + 
     labs(title = "Payment plans")
+}
+
+# Get payments for all payment plans. Used in displaying model inputs
+payment_plans2 <- function(indata) {
+  globals = named_list(indata$global_table, "name", "value")
+  con_def = named_list(indata$contract_description, "name", "value")
+  
+  indata$payment_table %>% 
+    transpose() %>% 
+    map( ~modifyList(con_def, .)) %>% 
+    map(~payment_plan(., globals)) %>% 
+    setNames(indata$payment_table %>% pull(payment) ) %>% 
+    as_tibble() %>% 
+    mutate(time = row_number()) %>% 
+    pivot_longer(-time, names_to = "payment_plan", values_to = "payment")
 }
 
 create_state_table = function(indata) {
@@ -86,7 +101,7 @@ create_payment_plans <- function(state_table_tr, indata) {
   globals = named_list(indata$global_table, "name", "value")
   con_def = named_list(indata$contract_description, "name", "value")
   cons = state_table_tr %>% 
-    left_join(indata$payment_table) %>% 
+    left_join(indata$payment_table, by = join_by(payment)) %>% 
     mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
     mutate(payment = replace_na(payment, "Death"))
   
@@ -119,7 +134,7 @@ analyse_treatment <- function(state_table_tr, indata) {
     as_tibble() %>% 
     mutate(time = row_number()) %>% 
     pivot_longer(-time, names_to = "start", values_to = "value", names_prefix = "S", names_transform = as.integer) %>% 
-    left_join(state_table_tr %>% select(start, costben = payment)) %>% 
+    left_join(state_table_tr %>% select(start, costben = payment), by = join_by(start)) %>% 
     filter(!is.na(costben)) %>% 
     group_by(time, costben) %>% 
     summarise(value = sum(value))
@@ -182,6 +197,8 @@ load_data <- function(vals, indata, filename) {
       indata$treatment_table = read_excel(filename, sheet = "Treatments") 
       indata$contract_table = read_excel(filename, sheet = "Contracts") 
       indata$global_table = read_excel(filename, sheet = "Globals") 
+      indata$state_description = read_excel(filename, sheet = "State_fields") 
+      indata$payment_description = read_excel(filename, sheet = "Payment_fields") 
       indata$treatment_description = read_excel(filename, sheet = "Treatment_fields") 
       indata$contract_description = read_excel(filename, sheet = "Contract_fields")
       indata$global_description = read_excel(filename, sheet = "Global_fields")
