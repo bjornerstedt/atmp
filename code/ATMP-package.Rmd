@@ -2,8 +2,8 @@
 title: "ATMP package documentation"
 always_allow_html: true
 output:
-  html_document: default
   md_document: default
+  html_document: default
   word_document: default
 ---
 
@@ -36,14 +36,12 @@ source("atmp.R")
 example_simple = open_indata("Simple.xlsx")
 exampleA = open_indata("Example_A.xlsx")
 exampleB = open_indata("Example_B.xlsx")
-exampleA2 = open_indata("Example_A2.xlsx")
-
-
+# exampleA2 = open_indata("Example_A2.xlsx")
 ```
 
 # Introduction
 
-The ATMP package is an R package to analyse the long term health effects and costs of ATMP treatments. The package focuses on the analysis of different payment schemes that condition on outcomes over time. Modelling payments over a long time horizon, the package allows payment schemes that  specify payments or reimbursements that can depend on individual or aggregate outcomes. 
+The ATMP package is an R package to analyse the long term health effects and costs of ATMP treatments. The package focuses on the analysis of different payment schemes that condition on outcomes over time. Modelling payments over a long time horizon, the package allows payment plans that specify payments or reimbursements that can depend on individual or aggregate outcomes. 
 
 The current version simulates the expected health and cost effects given the parameters used. Modelling the variability outcomes in terms of individual outcomes, or uncertainty in the parameter estimates increases the level of complexity of the interface. Given the uncertainties in long term estimation, we have chosen to focus on allowing variation in parameter estimates rather than specifying a distribution for the uncertain parameters.
 
@@ -51,13 +49,13 @@ Two guiding principles in the design of the package are flexibility and ease of 
 
 # Structure of a simulation
 
-A simulation is based on a combination of _treatments_ and _payment schemes_, combined with a set of _global parameters_ such as discount factors, time horizon etc. 
+A simulation is based on a combination of _treatments_ and _payment plans_, combined with a set of _global parameters_ such as discount factors and the time horizon of the analysis. 
 
 _Treatments_ specify Markov health models, with states, transitions between states and the quality of life of each state. The ATMP package restricts the structure of the health model in order for it to be easier to use. In this first version transitions are all in one direction - the health state never improves. Although the underlying functionality is general allowing arbitrary transitions between health states - such generality is more difficult to specify in a simple way for users.   
 
-_Payment schemes_ specify payment schemes, how much is payed when under what conditions. A treatment can include several payment schemes, with multiple payments. Payment scheme payments can begin and end depending on health states. For example if a treatment stops working, payment for an alternative treatment begins.  
+_Payment plans_ specify how much is payed when under what conditions. A treatment can include several payments each over several time periods. Payment plan payments can begin and end depending on health states. For example if a treatment stops working, payment can end and the payment for an alternative treatment commences.  
 
-Payment schemes and treatments are associated by a _Arm_. An arm is simply a number, with each payment scheme and treatment having the same number being associated.  
+Payment plans and treatments are associated by a _Arm_: the active or the control arm.  
   
   - Many payment schemes can be associated with an arm, for different payments of different treatments in the treatment process
   
@@ -65,89 +63,78 @@ Payment schemes and treatments are associated by a _Arm_. An arm is simply a num
 
 ## Model specification
 
-Inputs to the simulation are set in an Excel file. Each health case has an Excel file specifying health and payment parameters for the models used. Although all parameters are set in the Excel sheet, one can also allow modification of parameters interactively using Shiny controls. Although many parameters can be set in the Excel tables, only the parameters of interest have to be included in the tables. With sensible default values for parameters, those that are not central do not have to be included. 
+Inputs to the simulation are set in an Excel file. Each health case has an Excel file specifying health and payment parameters for the models used. Although all parameters are set in the Excel sheet, one can also allow modification of parameters interactively using the ATMP app. Although many parameters can be set in the Excel tables, only the parameters of interest have to be included in the tables. With sensible default values for parameters, those that are not central do not have to be included. 
 
 # A simple example
 
-Below is a minimal treatment table for two health models _ATMP_ and _Comparison_,  each with 6 states. The only difference between the treatments is the column `p_HU` - the probability of moving from state 1 to 2. For simplicity, let's assume that the probability of dying from other reasons is zero. As QoL has not specified otherwise, state 1 is full health with QoL = 1 and the final state 4 is death with QoL = 0. For the `Comparison` the probability of transitioning to state 2 is 1.
-
-```{r }
-
-example_simple$treatment_table %>% 
-  with_titles( example_simple$treatment_description) %>% 
-  flextable_output() %>% 
-  colformat_double(j = 1, digits = 0) %>% 
-  colformat_double(j = 4, digits = 0)
-```
-
-The probabilities can be interpreted as follows. Consider the resultant table below for the _ATMP_ treatment. The hazard p_HU is the probability of moving from state 1 to 2. The probabilities p_HD and p_UD that a healthy or an unhealthy person dies without full progression (moving directly to state 4) are here set to zero. If not specified the default values for parameters are used. 
-
-For ATMP, the transition from full health (state 1) to progression (state 2) is random, with a probability of 0.05 of moving to state 2.  Progression once started is deterministic, with probability 1 of moving to the next state, eventually ending in death (state 6). 
+Below is a minimal treatment table for the  _ATMP_ treatment, with 4 states. The probabilities _Pr. prog_ are the probabilities of progressing to the next state. The probability of moving from state 1 to 2 is thus 0.05. Each state is associated with a Quality of Life _QoL_, and a _Payment plan_. In State 1, the payment is for the ATMP treatment. In State 2 we have assumed that the ATMP treatment has stopped working, in which case the comparator treatment is used. In the final state 4, there are no payments and QoL is assumed to be zero. For simplicity, we assume in this example that the probability of dying from other reasons is zero. 
 
 ```{r}
-state_table = read_csv("
-name,         state,    pr.prog,   QoL,  p_death,  payment
-ATMP,         1,        0.05,     1.0,    0.01,   ATMP; Hospital
-ATMP,         2,        1.00,     0.8,    0.02,   Comparison
-ATMP,         3,        1.00,     0.6,    0.02,   Comparison
-ATMP,         4,        0.00,     0.0,    0.00,
-")
-
-state_table %>% select(-name, -p_death, -payment) %>% flextable_output() %>% 
-  colformat_double(j = 1, digits = 0) 
+example_simple$state_table %>% 
+  select( -p_death) %>% 
+  filter(treatment == "ATMP") %>% 
+  with_titles( example_simple$state_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(2), digits = 0) 
 ```
 
-Treatment tables can include more detailed information. At this time the following variables can be specified in a treatment table. If not specified, the default values in the table below are used (given by the `value` column). For example the random state does not have to be the first state - we can have delayed treatment where there is progression prior to treatment.
+For the ATMP treatment, the transition from full health (state 1) to progression (state 2) is random, with a probability of 0.05 of moving to state 2.  Progression once started is deterministic, with probability 1 of moving to the next state, eventually ending in death (state 4). 
+
+Below is the treatment table for two treatments: _ATMP_ and _Comparison_. The only difference between the treatments is in state 1. For the _Comparison_ treatment the comparator drug is used and the probability of transitioning to state 2 is 1. The only difference between the treatments is the column _Pr. Prog_ - the probability of progressing from state 1 to 2.
+ 
+
+```{r}
+example_simple$state_table %>% 
+  select(-p_death) %>% 
+  with_titles( example_simple$state_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(2), digits = 0) 
+```
+
+Treatment tables can include more detailed information. At this time the following variables can be specified in a treatment table. If not specified, the default values in the table below are used (given by the _value_ column). For example the random state does not have to be the first state - we can have delayed treatment where there is progression prior to treatment. A restriction in the current model is that only one random state is allowed (i.e. with _Pr. prog_ between zero and one).
 
 ```{r }
-example_simple$treatment_description %>% select(-name) %>% flextable_output()
+example_simple$state_description %>% select(-name, -min, -max) %>% flextable_output()
 ```
 
-
-## Treatment plan
-
-Treatments and payment schemes are matched by specifying the same _Arm_. In our example, we want to compare the ATMP treatment (arm 1) with a comparison alternative (arm 2). Payment schemes, discussed below, with the same plan numbers will be matched.
 
 ## Transition matrix 
 
 From the treatment table a transition matrix is generated. For the example ATMP treatment, it is given by the table below. The table describes the probability of moving from one state (rows in the table) to a new state in the next period (columns in the table). In the ATMP treatment it is a combination of random start of progression and deterministic progression over 4 years.
 
-```{r}
-print_tansitions(example_simple, "ATMP")
+```{r, eval=FALSE}
+print_transitions(example_simple, "ATMP")
 ```
 
 ## Quality of life
 
-To each state, a measure of the quality of life (QoL) is associated. By default in the ATMP treatment a linear decrease in QoL from 1 (full health) to 0 (death) over the 6 states.
+To each state, a measure of the quality of life (QoL) is associated. As specified both treatments have the same linear decrease in QoL from 1 (full health) to 0 (death) over the 4 states.
 
-The figure below shows a simulation of 8 individuals, with both 4 year progression and immediate transition to death. Four individuals progress from full health, and one individual dies without progression.
-
-```{r}
-plot_treatment_paths(example_simple, "ATMP")
+```{r, eval=FALSE}
+plot_QoL(example_simple)
 ```
 
 
-# Payment schemes
+# Payment plans
 
-Payment schemes are specified in a  table in the Excel input sheet. A simple example from above, we let each treatment have a corresponding payment scheme specifying a payment plan.
+Payment plans are specified in a table in the Excel input sheet. A simple example from above, we let each treatment have a corresponding payment plan.
 
 ```{r, message=FALSE}
-example_simple$contract_table %>% 
-    with_titles( example_simple$contract_description) %>% 
+example_simple$payment_table %>% 
+    with_titles( example_simple$payment_description) %>% 
   flextable_output() %>% 
-  colformat_double(j = c(1,5), digits = 0) 
+  colformat_double(j = c(4), digits = 0) 
 ```
 
-The total _ATMP payment_ is 10 with a payment scheme length of 10. This implies that the payment is spread evenly over the ten years, with a payment of 1 each year. The payment scheme also specifies that if the end state (here state 2) is reached, payments cease. 
+The total _ATMP payment_ is 10 with a payment scheme length of 10 years. This implies that the payment is spread evenly over the ten years, with a payment of 1 each year. The payment scheme also specifies that payments cease if the next state (here state 2) is reached before ten years have passed,  
 
-For the _Comparison_ alternative we assume continuous purchases as long as the patient is alive. Payments are made as long as state 6 (death) is not reached. Payments of 0.5 have been specified as continuous payments, implying that this is the yearly payment. The payment scheme length has no effect in this case, here set to 0.
+For the _Comparison_ alternative we assume continuous purchases as long as the patient is alive. Payments are made as long as state 4 (death) is not reached. Payments of 0.5 have been specified as continuous payments, implying that this is the yearly payment. The payment scheme length has no effect in this case, here set to 0.
 
 The payment plans for _ATMP payment_ and _Comparison_ over a 20 year time horizon are shown below.
 
 ```{r}
-# TODO: remove the global_table_rnames hack. Use same syntax in markov.R
-payment_plans(example_simple) %>%
-  ggplot() + aes(time, payment) + geom_col(fill = lightblue) + facet_grid(rows = vars(payment_plan))
+plot_payment_plans(example_simple)
+
 ```
 
 
@@ -156,7 +143,7 @@ payment_plans(example_simple) %>%
 A full list of specifications is given in the table below. 
 
 ```{r, message=FALSE}
-example_simple$contract_description %>% select(-name) %>% flextable_output() 
+example_simple$payment_description %>% select(-name, -min, -max) %>% flextable_output() 
 ```
 
 Payment schemes specify:
@@ -185,7 +172,7 @@ example_simple$global_table %>% flextable_output()
 
 # Analysis
 
-Analysis of health effects and costs can be done either by simply processing the input data specified in the Excel file, or interactively in a Shiny app.
+Analysis of health effects and costs can be done either by simply processing the input data specified in the Excel file, or interactively in the ATMP app.
 
 The results of the analysis can be 
 
@@ -199,178 +186,31 @@ Interactive analysis allows modification of all input specified in Excel sheet. 
   
 As even simple health models require a lot of indata, interactivity is based on setting all values of interest in an Excel sheet. A starting point for a model can be one of the example models provided with the app. The Excel sheet specifies all indata, with the user only modifying selected variables. The choice of variables for interactive analysis will depend on the specific model at hand. 
 
-# Example A - Analysis of payment schemes
+## Using the ATMP app
 
-Here we will study an example with more complicated treatment and payment structure than above. We will compare two ATMP treatments with a Comparison alternative. Under the _ATMP Certain_ treatment it is assumed that the ATMP treatment will not fail; the probability p_HU = 0. The _ATMP_ treatment differs only in that the probability of failure, with transition to progression occurs with probability 0.05. Progression is as before over four states (years), ending in death. 
+When the ATMP app starts, you are med with a screen, with six tabs at the top:
 
-```{r}
-exampleA$treatment_table  %>% 
-  with_titles( exampleA$treatment_description) %>% 
-  flextable_output() %>% 
-  colformat_double(j = c(1,6), digits = 0) 
+1.  *Overview* - The current tab
+2.  *Model* - Select health model
+3.  *Input* - See/modify the input values of the model
+4.  *Analysis* - Analysis of the health model
+5.  *Report* - Download a report of the analysis
+6. *Help* - This text.
 
-```
+### The Model tab
 
+The starting point of the analysis is a _health model_; tables of input values specified in an Excel sheet. Selecting the _Model_ tab displays a page where you select the health model to analyse. You can open an example model by selecting one of the models in the list box, or open an Excel file from your computer.
 
-Plan 1 has a payment for the ATMP treatment, and separately internal costs. If the ATMP treatment fails, there is a cost of using the comparison treatment in the progression period. The _Progression treatment_ starts in state 2 and ends with death (state 6). 
+Once loaded, the page will display figures of quality of life and payment plans of the health model.
 
-```{r, eval=TRUE}
-exampleA$contract_table %>% 
-  with_titles( exampleA$contract_description) %>% 
-  flextable_output()  %>% 
-  colformat_double(j = c(1,5,6), digits = 0) 
-```
+### The Input tab
 
-- Analysis of three different payment plans 
+Once loaded, values can be modified under the _Input_ tab. Simply double click on a value to change it, clicking somewhere else once you have entered a new value. The model tables displayed on the _Input_ page can be downloaded as an Excel file to your computer using the _Download_ button at the bottom of the _Input_ page.
 
-1) ATMP with continuous payment over 10 years and an initial hospital cost of 0.5. Health costs in addition to the payment of the ATMP treatment can be specified independently.
+### The Input tab
 
-2) ATMP as in the previous plan with zero hazard of ATMP leading to progression. This allows the comparison of the health effects if there is no uncertainty in the long term health effects of ATMP with the effects if there is a positive hazard that the health effect disappears.
+Results of the analysis are displayed in the _Analysis_ tab. Some parameters will also affect the plots on the _Model_ page.
 
-3) Comparison treatment
+### The Report tab
 
-The main function `contract_analysis()` generates a data.frame of QALYs for each treatment and Costs for each payment scheme associated with the treatment. 
-
-```{r, echo=TRUE}
-df =  contract_analysis(exampleA, show_details = TRUE) 
-```
-
-The content of `df` is as follows
-
-```{r, knitr.kable.na = ' '}
-df %>% flextable_output()
-```
-
-
-## Combining results
-
-QALY and Costs for each plan can be summed
-
-```{r}
-df2 = df %>% 
-  group_by(name, plan) %>% select(-contract) %>% 
-  summarise_all(~sum(.x, na.rm = TRUE)) 
-
-df2 %>% 
-  flextable_output()
-```
-
-To get a comparison table of ATMP and the _Comparison_ alternative, the helper function `compare_results()` can be used.
-
-```{r}
-compare_results(df) %>% 
-   flextable_output()
-```
-
-## Plots
-
-In order to understand the simulation results, it can be helpful to study the costs and health effects over time.
-
-To display plots of costs and QALY over time, a dataset can generated with the `over_time = TRUE` option.
-
-```{r, echo=TRUE}
-df =  contract_analysis(exampleA, over_time = TRUE)
-```
-
-We can plot the payments and QoL by using standard plotting functions in R.
-
-The costs for different payment schemes are plotted below. In the payment schemes above it was specified that in addition to ATMP payments over ten years, an initial cost for hospital treatment was included. In addition, if the ATMP ceased to work, alternative treatment during the progression was included. As can be seen below, payments for ATMP over time decrease, as payments are assumed to stop if health state 2 is reached, or if the patient dies. With ATMP Certain there is no cost for progression as the hazard is assumed to be 0.
-
-```{r}
-df %>% ggplot() + 
-  aes(time, Cost, fill = contract) + 
-  geom_col()  + facet_grid(rows = vars(name))
-```
-
-We can also plot QoL over time
-
-```{r}
-df %>% filter(!is.na(QALY)) %>% ggplot() + 
-  aes(time, QALY, color = name) + 
-  geom_line() 
-```
-
-
-# Example B - Cost saving ATMP
-
-In the health model in this section we assume that the benefits of ATMP are mainly in cost reductions. In the figure below, the health gains of ATMP are relatively small, with a QoL of 0.9 instead of 0.8 as in the conventional treatment. There is a probability of failure and of death as in previous examples. 
-
-As before the ATMP treatment can cease to work. In the current health model this implies a continuation of the conventional treatment at the lower level QoL = 0.8. Both those treated with ATMP and the conventional treatment can also die of other causes. 
-
-```{r}
-exampleB$treatment_table  %>% 
-  with_titles( exampleA$treatment_description) %>% 
-  flextable_output() %>% 
-  colformat_double(j = c(1,6,9), digits = 0) 
-```
-
-We set a second random state to state 2, in order to specify the transition probability to the next state state 3. The default is 0, if we wanted to set another value, this could be done with `p_HU2`. [Note bad name] 
-
-```{r, eval=TRUE}
-plot_treatment_paths(exampleB, "ATMP")
-```
-
-If the net benefits of the ATMP treatment come primarily from cost savings, the forecast costs of the counterfactual comparison treatment is crucial. In the forecast period, here twenty years, the cost of alternative treatments cannot be assumed to be held constant. Allowing for a long term expected price decrease of 5 percent reduces the cost of the comparison treatment.  
-
-
-```{r}
-exampleB$contract_table  %>% 
-  with_titles( exampleA$contract_description) %>% 
-  flextable_output() %>% 
-  colformat_double(j = c(1,6,9), digits = 0) 
-
-```
-
-
-
-
-```{r}
-plot_payment_plans(exampleB)
-```
-
-# Example C - Discounting
-
-We now set the discount rates in the global table. 
-
-```{r}
-exampleA2$global_table %>% 
-  flextable_output() 
-```
-
-Here we have specified two alternative treatments, _ATMP_ and _ATMP Certain_ to be compared with the _Comparison_ alternative. They differ only in the probability of progression, with ATMP Certain having zero probability of failing.
-
-```{r}
-exampleA2$treatment_table %>% 
-  with_titles( exampleA$treatment_description) %>% 
-  flextable_output() %>% 
-  colformat_double(j = c(1,6), digits = 0) 
-
-```
-
-We have specified an initial payment for hospital care for the ATMP treatment.
-
-```{r, eval=TRUE}
-exampleA2$contract_table %>% 
-  with_titles( exampleA$contract_description) %>% 
-  flextable_output()   
-```
-
-
-```{r}
-df =  contract_analysis(exampleA2, show_details = TRUE) 
-```
-
-
-```{r}
-df2 = df %>% 
-  group_by(name, plan) %>% select(-contract) %>% 
-  summarise_all(~sum(.x, na.rm = TRUE)) 
-
-df2 %>% 
-  flextable_output()
-```
-
-```{r}
-compare_results(df) %>% 
-   flextable_output()
-```
+You can download a report containing the tables and figures displayed on the Model and Analysis pages, in the desired file format.

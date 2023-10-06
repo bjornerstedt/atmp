@@ -77,7 +77,7 @@ plot_treatment_paths <- function(indata, treatment_name, reps = 8, T = 20) {
   abline(h=1, lty=3)
 }
 
-print_tansitions <- function(indata, treatment_name) {
+print_transitions <- function(indata, treatment_name) {
   ex_treatment = indata$treatment_table %>% 
     filter(name == treatment_name) %>% 
     pmap(Treatment) %>% 
@@ -296,9 +296,11 @@ create_state_table = function(indata) {
     mutate(periods = replace_na(lead(state) - state, 1)) %>% 
     fill(QoL) %>% 
     uncount(periods) %>% 
-    mutate(item = state, start = row_number()) %>% 
+    mutate(start = row_number()) %>% 
     group_by(treatment, QoLstate) %>% 
     mutate(QoL = QoL - (QoL - QoLnext)*(row_number() - 1 )/n() ) %>% 
+    group_by(payment) %>%
+    mutate(pstart = min(state)) %>%
     ungroup() %>% 
     select(-QoLstate, -QoLnext)
 }
@@ -306,7 +308,8 @@ create_state_table = function(indata) {
 transition_matrix <- function(state_table) {
   state_table = state_table
   health_states = max(state_table$start)
-  P = suppressWarnings(matrix(0.0, health_states, health_states))
+  P = matrix(0.0, health_states, health_states)
+  # P = matrix(0.0, as.integer( health_states), as.integer( health_states))
   for (i in 1:(health_states-1)) {
     P[i, i] = 1 - state_table$p_prog[i] 
     P[i, i + 1] = state_table$p_prog[i] - state_table$p_death[i]
@@ -351,6 +354,7 @@ create_payment_plans <- function(state_table_tr, indata) {
   ret
 }
 
+# state_table_tr is 
 analyse_treatment <- function(state_table_tr, indata) {
   globals = named_list(indata$global_table, "name", "value")
   
@@ -359,7 +363,8 @@ analyse_treatment <- function(state_table_tr, indata) {
   states = expected_markov( P, globals$time_horizon)
   
   # CALCULATE COSTS AND QALY
-  costs =  create_payment_plans(state_table_tr, indata) * states
+  costs =  create_payment_plans(state_table_tr %>% mutate(start = pstart), indata) * states
+  # costs =  create_payment_plans(state_table_tr, indata) * states
   
   QALY = as.vector( states %*% get_QoL(state_table_tr)) * 
     discounting(globals$discount, globals$time_horizon)
@@ -368,8 +373,9 @@ analyse_treatment <- function(state_table_tr, indata) {
   ret = tibble()
   costs_df = costs %>% 
     as_tibble() %>% 
+    setNames( 1:ncol(costs)) %>% 
     mutate(time = row_number()) %>% 
-    pivot_longer(-time, names_to = "start", values_to = "value", names_prefix = "S", names_transform = as.integer) %>% 
+    pivot_longer(-time, names_to = "start", values_to = "value", names_transform = as.integer) %>% 
     left_join(state_table_tr %>% select(start, costben = payment), by = join_by(start)) %>% 
     filter(!is.na(costben)) %>% 
     group_by(time, costben) %>% 
@@ -429,10 +435,10 @@ analyse_treatments <- function(indata, over_time = FALSE, show_details = FALSE) 
 open_indata <- function( filename, vals = list(), indata = list()) {
   tryCatch(
     {
-      indata$state_description = read_excel(filename, sheet = "State_fields") 
+      indata$state_description = read_excel(filename, sheet = "Treatment_fields") 
       indata$payment_description = read_excel(filename, sheet = "Payment_fields") 
       indata$global_table = read_excel(filename, sheet = "Globals") 
-      indata$state_table = read_excel(filename, sheet = "States")
+      indata$state_table = read_excel(filename, sheet = "Treatments")
       indata$payment_table = read_excel(filename, sheet = "Payments")
       indata$global_description = read_excel(filename, sheet = "Global_fields")
     },

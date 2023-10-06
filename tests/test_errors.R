@@ -1,4 +1,6 @@
 library(tidyverse)
+setwd("~/GitHub/atmp/code")
+
 source('atmp.R')
 source('atmp_new.R')
 

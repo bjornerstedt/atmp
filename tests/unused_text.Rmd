@@ -1,0 +1,202 @@
+---
+title: "Outtext"
+author: "Jonas Björnerstedt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Title
+
+ The probabilities can be interpreted as follows. Consider the resultant table below for the _ATMP_ treatment. The hazard p_HU is the probability of moving from state 1 to 2. The probabilities p_HD and p_UD that a healthy or an unhealthy person dies without full progression (moving directly to state 4) are here set to zero. If not specified the default values for parameters are used. 
+
+As QoL has not specified otherwise, state 1 is full health with QoL = 1 and the final state 4 is death with QoL = 0. 
+
+The figure below shows a simulation of 8 individuals, with both 4 year progression and immediate transition to death. Four individuals progress from full health, and one individual dies without progression.
+
+```{r, eval=FALSE}
+plot_treatment_paths(example_simple, "ATMP")
+```
+
+# Analysis
+
+# Example A - Analysis of health models
+
+Here we will study an example with more complicated treatment and payment structure than above. We will compare two ATMP treatments with a Comparison alternative. Under the _ATMP Certain_ treatment it is assumed that the ATMP treatment will not fail; the probability p_HU = 0. The _ATMP_ treatment differs only in that the probability of failure, with transition to progression occurs with probability 0.05. Progression is as before over four states (years), ending in death. 
+
+```{r}
+exampleA$treatment_table  %>% 
+  with_titles( exampleA$treatment_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6), digits = 0) 
+
+```
+
+
+Plan 1 has a payment for the ATMP treatment, and separately internal costs. If the ATMP treatment fails, there is a cost of using the comparison treatment in the progression period. The _Progression treatment_ starts in state 2 and ends with death (state 6). 
+
+```{r, eval=TRUE}
+exampleA$contract_table %>% 
+  with_titles( exampleA$contract_description) %>% 
+  flextable_output()  %>% 
+  colformat_double(j = c(1,5,6), digits = 0) 
+```
+
+- Analysis of three different payment plans 
+
+1) ATMP with continuous payment over 10 years and an initial hospital cost of 0.5. Health costs in addition to the payment of the ATMP treatment can be specified independently.
+
+2) ATMP as in the previous plan with zero hazard of ATMP leading to progression. This allows the comparison of the health effects if there is no uncertainty in the long term health effects of ATMP with the effects if there is a positive hazard that the health effect disappears.
+
+3) Comparison treatment
+
+The main function `contract_analysis()` generates a data.frame of QALYs for each treatment and Costs for each payment scheme associated with the treatment. 
+
+```{r, echo=TRUE}
+df =  contract_analysis(exampleA, show_details = TRUE) 
+```
+
+The content of `df` is as follows
+
+```{r, knitr.kable.na = ' '}
+df %>% flextable_output()
+```
+
+
+## Combining results
+
+QALY and Costs for each plan can be summed
+
+```{r}
+df2 = df %>% 
+  group_by(name, plan) %>% select(-contract) %>% 
+  summarise_all(~sum(.x, na.rm = TRUE)) 
+
+df2 %>% 
+  flextable_output()
+```
+
+To get a comparison table of ATMP and the _Comparison_ alternative, the helper function `compare_results()` can be used.
+
+```{r}
+compare_results(df) %>% 
+   flextable_output()
+```
+
+## Plots
+
+In order to understand the simulation results, it can be helpful to study the costs and health effects over time.
+
+To display plots of costs and QALY over time, a dataset can generated with the `over_time = TRUE` option.
+
+```{r, echo=TRUE}
+df =  contract_analysis(exampleA, over_time = TRUE)
+```
+
+We can plot the payments and QoL by using standard plotting functions in R.
+
+The costs for different payment schemes are plotted below. In the payment schemes above it was specified that in addition to ATMP payments over ten years, an initial cost for hospital treatment was included. In addition, if the ATMP ceased to work, alternative treatment during the progression was included. As can be seen below, payments for ATMP over time decrease, as payments are assumed to stop if health state 2 is reached, or if the patient dies. With ATMP Certain there is no cost for progression as the hazard is assumed to be 0.
+
+```{r}
+df %>% ggplot() + 
+  aes(time, Cost, fill = contract) + 
+  geom_col()  + facet_grid(rows = vars(name))
+```
+
+We can also plot QoL over time
+
+```{r}
+df %>% filter(!is.na(QALY)) %>% ggplot() + 
+  aes(time, QALY, color = name) + 
+  geom_line() 
+```
+
+
+# Example B - Cost saving ATMP
+
+In the health model in this section we assume that the benefits of ATMP are mainly in cost reductions. In the figure below, the health gains of ATMP are relatively small, with a QoL of 0.9 instead of 0.8 as in the conventional treatment. There is a probability of failure and of death as in previous examples. 
+
+As before the ATMP treatment can cease to work. In the current health model this implies a continuation of the conventional treatment at the lower level QoL = 0.8. Both those treated with ATMP and the conventional treatment can also die of other causes. 
+
+```{r}
+exampleB$treatment_table  %>% 
+  with_titles( exampleA$treatment_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6,9), digits = 0) 
+```
+
+We set a second random state to state 2, in order to specify the transition probability to the next state state 3. The default is 0, if we wanted to set another value, this could be done with `p_HU2`. [Note bad name] 
+
+```{r, eval=TRUE}
+plot_treatment_paths(exampleB, "ATMP")
+```
+
+If the net benefits of the ATMP treatment come primarily from cost savings, the forecast costs of the counterfactual comparison treatment is crucial. In the forecast period, here twenty years, the cost of alternative treatments cannot be assumed to be held constant. Allowing for a long term expected price decrease of 5 percent reduces the cost of the comparison treatment.  
+
+
+```{r}
+exampleB$contract_table  %>% 
+  with_titles( exampleA$contract_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6,9), digits = 0) 
+
+```
+
+
+
+
+```{r}
+plot_payment_plans(exampleB)
+```
+
+# Example C - Discounting
+
+We now set the discount rates in the global table. 
+
+```{r}
+exampleA2$global_table %>% 
+  flextable_output() 
+```
+
+Here we have specified two alternative treatments, _ATMP_ and _ATMP Certain_ to be compared with the _Comparison_ alternative. They differ only in the probability of progression, with ATMP Certain having zero probability of failing.
+
+```{r}
+exampleA2$treatment_table %>% 
+  with_titles( exampleA$treatment_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(1,6), digits = 0) 
+
+```
+
+We have specified an initial payment for hospital care for the ATMP treatment.
+
+```{r, eval=TRUE}
+exampleA2$contract_table %>% 
+  with_titles( exampleA$contract_description) %>% 
+  flextable_output()   
+```
+
+
+```{r}
+df =  contract_analysis(exampleA2, show_details = TRUE) 
+```
+
+
+```{r}
+df2 = df %>% 
+  group_by(name, plan) %>% select(-contract) %>% 
+  summarise_all(~sum(.x, na.rm = TRUE)) 
+
+df2 %>% 
+  flextable_output()
+```
+
+```{r}
+compare_results(df) %>% 
+   flextable_output()
+```

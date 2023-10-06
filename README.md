@@ -14,6 +14,8 @@
   
   * generate QoL if it is omitted
   
+  * Allow only 1 random state
+  
   * Två eller flera payments genom kommaseparering. (De gäller för alla perioder som tabellen specificerar, med periods anges hur betalning sker.)
 
 * Döp om variabler: contract
