@@ -52,16 +52,27 @@ P = transition_matrix(state_table_tr)
 states = expected_markov( P, globals$time_horizon)
 
 # Modification
-costs =  create_payment_plans(state_table_tr %>% mutate(start = pstart), indata) * states
-
-costs_df = costs %>% 
-  as_tibble() %>% 
-  mutate(time = row_number()) %>% 
-  pivot_longer(-time, names_to = "start", values_to = "value", names_prefix = "S", 
-               names_transform = as.integer,values_drop_na = FALSE) %>% 
-  left_join(state_table_tr %>% select(start, costben = payment), by = join_by(start)) %>% 
-  filter(!is.na(costben)) %>% 
-  group_by(time, costben) %>% 
-  summarise(value = sum(value))
+state_table_tr
 
 create_payment_plans(state_table_tr, indata)
+
+# create_payment_plans2 <- function(state_table_tr, indata) {
+  globals = named_list(indata$global_table, "name", "value")
+  con_def = named_list(indata$payment_description, "name", "value")
+  cons = state_table_tr  %>% mutate(start = pstart) %>% 
+    left_join(indata$payment_table, by = join_by(payment)) %>% 
+    mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
+    mutate(payment = replace_na(payment, "Death"))
+  
+  ret = c()
+  for (i in 1:nrow(cons)) {
+    con = cons %>% slice(i)  %>% as.list() %>% 
+      modifyList(con_def, .)
+    ret = c(ret, payment_plan(con, globals))
+  }
+  ret = matrix(ret, ncol = nrow(cons))
+  ret
+# }
+
+cons
+

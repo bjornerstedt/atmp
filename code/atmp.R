@@ -300,7 +300,7 @@ create_state_table = function(indata) {
     group_by(treatment, QoLstate) %>% 
     mutate(QoL = QoL - (QoL - QoLnext)*(row_number() - 1 )/n() ) %>% 
     group_by(payment) %>%
-    mutate(pstart = min(state)) %>%
+    mutate(pstart = min(start), pend = max(start) ) %>%
     ungroup() %>% 
     select(-QoLstate, -QoLnext)
 }
@@ -336,22 +336,23 @@ named_list <- function(table, name, value) {
   ret  
 }
 
-create_payment_plans <- function(state_table_tr, indata) {
+calculate_costs <- function(state_table_tr, indata, states) {
   globals = named_list(indata$global_table, "name", "value")
   con_def = named_list(indata$payment_description, "name", "value")
   cons = state_table_tr %>% 
+    mutate(start = pstart) %>%  # TODO: remove start variable
     left_join(indata$payment_table, by = join_by(payment)) %>% 
     mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
     mutate(payment = replace_na(payment, "Death"))
   
-  ret = c()
+  pay = c()
   for (i in 1:nrow(cons)) {
     con = cons %>% slice(i)  %>% as.list() %>% 
       modifyList(con_def, .)
-    ret = c(ret, payment_plan(con, globals))
+    pay = c(pay, payment_plan(con, globals))
   }
-  ret = matrix(ret, ncol = nrow(cons))
-  ret
+  pay = matrix(pay, ncol = nrow(cons))
+  pay * states
 }
 
 # state_table_tr is 
@@ -363,7 +364,7 @@ analyse_treatment <- function(state_table_tr, indata) {
   states = expected_markov( P, globals$time_horizon)
   
   # CALCULATE COSTS AND QALY
-  costs =  create_payment_plans(state_table_tr %>% mutate(start = pstart), indata) * states
+  costs =  calculate_costs(state_table_tr , indata, states) 
   # costs =  create_payment_plans(state_table_tr, indata) * states
   
   QALY = as.vector( states %*% get_QoL(state_table_tr)) * 
@@ -408,15 +409,19 @@ analyse_treatments <- function(indata, over_time = FALSE, show_details = FALSE) 
         costben = if_else(costben != "QALY", costben, NA) 
       ) %>% select(-value) %>% rename(payment = costben)
     if (!show_details) {
-      global_ea_count = 1
+      # TODO: Add function get_global(indata, name)
+      global_control_count = column_to_rownames(indata$global_table, "name")[['control_count',1]] 
+      global_control_count = ifelse(is.na(global_control_count), 1, global_control_count)
       df = ret %>% group_by(treatment) %>% 
         summarise(
           Cost = sum(cost, na.rm = TRUE) , 
           QALY = sum(QALY, na.rm = TRUE)
         )  
+      ea = nrow(df) - global_control_count
+      
       cross_join(
-        df %>% slice(1:global_ea_count) ,
-        df %>% slice(-(1:global_ea_count))
+        df %>% slice(1:ea) ,
+        df %>% slice(-(1:ea))
       ) %>% 
         transmute(
           Treatments = str_c(treatment.x, " - ", treatment.y) ,

@@ -28,6 +28,7 @@ name,           title,        value,  min,max,  description
 discount,       HA discount,    0,    0,  .2,
 firm_discount,  Firm discount,  0,    0,  .2,
 time_horizon,   Time horizon,   20,   1,  100,  Time horizon of analysis
+control_count,  Control count,  1,    1,    ,   Number of control treatments
 "
 ) 
 
@@ -39,6 +40,7 @@ name, value
 discount, 0.0
 firm_discount, 0.0
 time_horizon, 20
+control_count, 1
 "
 ) 
 
@@ -109,21 +111,36 @@ write_xlsx(models, "Example_B.xlsx")
 # -------------- EXAMPLE A2 ---------------------------
 # More complex payment schemes
 
+models$Treatments = read_csv(show_col_types = FALSE, "
+treatment,    state,    p_prog,   QoL,  p_death, payment
+ATMP,         1,        0.05,     1.0,    0.01,   For ATMP tr.
+ATMP,         3,        1.00,        ,    0.02,   For comparator 1 tr.
+ATMP,         6,        0.00,     0.0,    0.00,
+ATMP certain, 1,        0.00,     1.0,    0.01,   For ATMP tr.
+ATMP certain, 6,        0.00,     0.0,    0.00,
+Comparison 1, 1,        1.00,     1.0,    0.02,   For comparator 1 tr.
+Comparison 1, 6,        0.00,     0.0,    0.00,   
+Comparison 2, 1,        1.00,     1.0,    0.015,   For comparator 2 tr.
+Comparison 2, 6,        0.00,     0.0,    0.00,   
+")
+
+
+models$Payments = read_csv(show_col_types = FALSE, "
+payment,          tot_payment, cont_payment,  contract_length
+For ATMP tr. ,      10,         0,        10
+For comparator 1 tr., 0,          0.5, 
+For comparator 2 tr., 0,          0.75, 
+") 
+
 models$Globals = read_csv(show_col_types = FALSE, "
 name, value
 discount, 0.03
 firm_discount, 0.03
 time_horizon, 20
+control_count, 2
 "
 ) 
 
-# models$Treatments = read_csv(show_col_types = FALSE, "
-# plan, name, p_HU, p_HD, p_UD, health_states
-# 1, ATMP,              0.04, 0.01, 0.02, 6
-# 1, ATMP Certain,      0, 0.01, 0.02, 6
-# 0, Comparison,        1,    0.01, 0.02, 6
-# ") 
-# 
 # models$Contracts = read_csv(show_col_types = FALSE, "
 # plan, name,tot_payment, cont_payment,     contract_length,initial_payment,refund, start, end
 # 1, For ATMP tr.,10,0,        10,0,             0, 1,2
