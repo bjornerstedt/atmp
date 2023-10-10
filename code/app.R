@@ -4,6 +4,7 @@ library(DT)
 library(writexl)
 library(readxl)
 library(rmarkdown)
+library(markdown)
 
 source("atmp.R")
 
@@ -16,7 +17,7 @@ dt_output = function(title, id) {
   ))
 }
 
-example_list = c("Example A", "Example B", "Example A2")
+example_list = c("Example A", "Example B", "Example C", "Example D")
 
 shinyApp(
   ui = fluidPage(
@@ -110,8 +111,9 @@ shinyApp(
     observeEvent(input$loadexample, {
       filenames = list(
         "Example A" = "Example_A.xlsx",
-        "Example A2" = "Example_A2.xlsx",
-        "Example B" = "Example_B.xlsx"
+        "Example B" = "Example_B.xlsx",
+        "Example C" = "Example_C.xlsx",
+        "Example D" = "Example_D.xlsx"
       )
       indata <- open_indata(filenames[[input$example]], vals, indata)
 
@@ -246,10 +248,10 @@ shinyApp(
     output$download <- downloadHandler(vals$filename, 
                                        content = function(file) {
                                          models = isolate(list(
-                                           States = vals$state_table ,
+                                           Treatments = vals$state_table ,
                                            Payments = vals$payment_table,
                                            Globals = vals$global_table,
-                                           State_fields = vals$state_description,
+                                           Treatment_fields = vals$state_description,
                                            Payment_fields = vals$payment_description,
                                            Global_fields = vals$global_description
                                          ))

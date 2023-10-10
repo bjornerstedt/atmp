@@ -370,8 +370,8 @@ analyse_treatment <- function(state_table_tr, indata) {
   QALY = as.vector( states %*% get_QoL(state_table_tr)) * 
     discounting(globals$discount, globals$time_horizon)
   
-  # Put into dataset and sum costs over states 
   ret = tibble()
+  # Put into dataset and sum costs over states 
   costs_df = costs %>% 
     as_tibble() %>% 
     setNames( 1:ncol(costs)) %>% 

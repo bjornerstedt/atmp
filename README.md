@@ -2,6 +2,8 @@
 
 ## TODO:
 
+* Interpretation of replication of random state
+
 * Skapa tester
 
 * How should probabilities be defined?
@@ -15,6 +17,8 @@
   * generate QoL if it is omitted
   
   * Allow only 1 random state
+  
+  * Check joins
   
   * Två eller flera payments genom kommaseparering. (De gäller för alla perioder som tabellen specificerar, med periods anges hur betalning sker.)
 

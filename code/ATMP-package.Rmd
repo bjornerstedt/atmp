@@ -2,9 +2,9 @@
 title: "ATMP package documentation"
 always_allow_html: true
 output:
-  md_document: default
-  html_document: default
   word_document: default
+  html_document: default
+  md_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -33,7 +33,7 @@ source("atmp.R")
 # source("create_settings.R")
 
 # Läs in från Excel
-example_simple = open_indata("Simple.xlsx")
+# example_simple = open_indata("Simple.xlsx")
 exampleA = open_indata("Example_A.xlsx")
 exampleB = open_indata("Example_B.xlsx")
 # exampleA2 = open_indata("Example_A2.xlsx")
@@ -70,10 +70,10 @@ Inputs to the simulation are set in an Excel file. Each health case has an Excel
 Below is a minimal treatment table for the  _ATMP_ treatment, with 4 states. The probabilities _Pr. prog_ are the probabilities of progressing to the next state. The probability of moving from state 1 to 2 is thus 0.05. Each state is associated with a Quality of Life _QoL_, and a _Payment plan_. In State 1, the payment is for the ATMP treatment. In State 2 we have assumed that the ATMP treatment has stopped working, in which case the comparator treatment is used. In the final state 4, there are no payments and QoL is assumed to be zero. For simplicity, we assume in this example that the probability of dying from other reasons is zero. 
 
 ```{r}
-example_simple$state_table %>% 
+exampleA$state_table %>% 
   select( -p_death) %>% 
   filter(treatment == "ATMP") %>% 
-  with_titles( example_simple$state_description) %>% 
+  with_titles( exampleA$state_description) %>% 
   flextable_output() %>% 
   colformat_double(j = c(2), digits = 0) 
 ```
@@ -84,9 +84,9 @@ Below is the treatment table for two treatments: _ATMP_ and _Comparison_. The on
  
 
 ```{r}
-example_simple$state_table %>% 
+exampleA$state_table %>% 
   select(-p_death) %>% 
-  with_titles( example_simple$state_description) %>% 
+  with_titles( exampleA$state_description) %>% 
   flextable_output() %>% 
   colformat_double(j = c(2), digits = 0) 
 ```
@@ -94,7 +94,7 @@ example_simple$state_table %>%
 Treatment tables can include more detailed information. At this time the following variables can be specified in a treatment table. If not specified, the default values in the table below are used (given by the _value_ column). For example the random state does not have to be the first state - we can have delayed treatment where there is progression prior to treatment. A restriction in the current model is that only one random state is allowed (i.e. with _Pr. prog_ between zero and one).
 
 ```{r }
-example_simple$state_description %>% select(-name, -min, -max) %>% flextable_output()
+exampleA$state_description %>% select(-name, -min, -max) %>% flextable_output()
 ```
 
 
@@ -103,7 +103,7 @@ example_simple$state_description %>% select(-name, -min, -max) %>% flextable_out
 From the treatment table a transition matrix is generated. For the example ATMP treatment, it is given by the table below. The table describes the probability of moving from one state (rows in the table) to a new state in the next period (columns in the table). In the ATMP treatment it is a combination of random start of progression and deterministic progression over 4 years.
 
 ```{r, eval=FALSE}
-print_transitions(example_simple, "ATMP")
+print_transitions(exampleA, "ATMP")
 ```
 
 ## Quality of life
@@ -111,7 +111,7 @@ print_transitions(example_simple, "ATMP")
 To each state, a measure of the quality of life (QoL) is associated. As specified both treatments have the same linear decrease in QoL from 1 (full health) to 0 (death) over the 4 states.
 
 ```{r, eval=FALSE}
-plot_QoL(example_simple)
+plot_QoL(exampleA)
 ```
 
 
@@ -120,8 +120,8 @@ plot_QoL(example_simple)
 Payment plans are specified in a table in the Excel input sheet. A simple example from above, we let each treatment have a corresponding payment plan.
 
 ```{r, message=FALSE}
-example_simple$payment_table %>% 
-    with_titles( example_simple$payment_description) %>% 
+exampleA$payment_table %>% 
+    with_titles( exampleA$payment_description) %>% 
   flextable_output() %>% 
   colformat_double(j = c(4), digits = 0) 
 ```
@@ -133,7 +133,7 @@ For the _Comparison_ alternative we assume continuous purchases as long as the p
 The payment plans for _ATMP payment_ and _Comparison_ over a 20 year time horizon are shown below.
 
 ```{r}
-plot_payment_plans(example_simple)
+plot_payment_plans(exampleA)
 
 ```
 
@@ -143,7 +143,7 @@ plot_payment_plans(example_simple)
 A full list of specifications is given in the table below. 
 
 ```{r, message=FALSE}
-example_simple$payment_description %>% select(-name, -min, -max) %>% flextable_output() 
+exampleA$payment_description %>% select(-name, -min, -max) %>% flextable_output() 
 ```
 
 Payment schemes specify:
@@ -167,7 +167,7 @@ Payment schemes specify:
 In addition to specifying treatments and payment schemes, _global variables_ are also specified in a table. All parameters common to all treatments and payment schemes in the case are specified in the global table. The time horizon of analysis, here 20 years, and discount rate are such common parameters.
 
 ```{r}
-example_simple$global_table %>% flextable_output()
+exampleA$global_table %>% flextable_output()
 ```
 
 # Analysis
