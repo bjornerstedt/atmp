@@ -77,21 +77,22 @@ plot_treatment_paths <- function(indata, treatment_name, reps = 8, T = 20) {
   abline(h=1, lty=3)
 }
 
-print_transitions <- function(indata, treatment_name) {
-  ex_treatment = indata$treatment_table %>% 
-    filter(name == treatment_name) %>% 
-    pmap(Treatment) %>% 
-    pluck(1)
-  P = transition(ex_treatment)
-  P %>% as_tibble() %>% 
-    mutate(st = row.names(P)) %>% 
-    select(st, everything()) %>% 
-    flextable() %>% 
-    theme_box() %>% 
-    bold(j = "st") %>% 
-    set_header_labels(st = "") %>% 
-    colformat_double(digits = 2, na_str = " ") 
-}
+# Old structure
+# print_transitions <- function(indata, treatment_name) {
+#   ex_treatment = indata$treatment_table %>% 
+#     filter(name == treatment_name) %>% 
+#     pmap(Treatment) %>% 
+#     pluck(1)
+#   P = transition(ex_treatment)
+#   P %>% as_tibble() %>% 
+#     mutate(st = row.names(P)) %>% 
+#     select(st, everything()) %>% 
+#     flextable() %>% 
+#     theme_box() %>% 
+#     bold(j = "st") %>% 
+#     set_header_labels(st = "") %>% 
+#     colformat_double(digits = 2, na_str = " ") 
+# }
 
 # Get payments for all payment plans. Used in displaying model inputs
 plot_payment_plans <- function(indata) {
@@ -306,13 +307,12 @@ create_state_table = function(indata) {
 }
 
 transition_matrix <- function(state_table) {
-  state_table = state_table
   health_states = max(state_table$start)
   P = matrix(0.0, health_states, health_states)
   # P = matrix(0.0, as.integer( health_states), as.integer( health_states))
   for (i in 1:(health_states-1)) {
-    P[i, i] = 1 - state_table$p_prog[i] 
-    P[i, i + 1] = state_table$p_prog[i] - state_table$p_death[i]
+    P[i, i] = (1 - state_table$p_prog[i]) * (1 - state_table$p_death[i])
+    P[i, i + 1] = state_table$p_prog[i] * (1 - state_table$p_death[i])
     P[i, health_states] =  P[i, health_states] + state_table$p_death[i] 
   }
   P[health_states, health_states] = 1

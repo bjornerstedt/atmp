@@ -2,9 +2,9 @@
 title: "ATMP package documentation"
 always_allow_html: true
 output:
+  md_document: default
   word_document: default
   html_document: default
-  md_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -41,7 +41,7 @@ exampleB = open_indata("Example_B.xlsx")
 
 # Introduction
 
-The ATMP package is an R package to analyse the long term health effects and costs of ATMP treatments. The package focuses on the analysis of different payment schemes that condition on outcomes over time. Modelling payments over a long time horizon, the package allows payment plans that specify payments or reimbursements that can depend on individual or aggregate outcomes. 
+The ATMP package is an R package to analyse the long term health effects and costs of ATMP treatments. The package focuses on the analysis of different payment plans that condition on outcomes over time. Modelling payments over a long time horizon, the package allows payment plans that specify payments or reimbursements that can depend on individual or aggregate outcomes. 
 
 The current version simulates the expected health and cost effects given the parameters used. Modelling the variability outcomes in terms of individual outcomes, or uncertainty in the parameter estimates increases the level of complexity of the interface. Given the uncertainties in long term estimation, we have chosen to focus on allowing variation in parameter estimates rather than specifying a distribution for the uncertain parameters.
 
@@ -57,7 +57,7 @@ _Payment plans_ specify how much is payed when under what conditions. A treatmen
 
 Payment plans and treatments are associated by a _Arm_: the active or the control arm.  
   
-  - Many payment schemes can be associated with an arm, for different payments of different treatments in the treatment process
+  - Many payment plans can be associated with an arm, for different payments of different treatments in the treatment process
   
   - Many treatments can be included in an arm, to analyse the health outcome under varying treatment assumptions 
 
@@ -97,14 +97,7 @@ Treatment tables can include more detailed information. At this time the followi
 exampleA$state_description %>% select(-name, -min, -max) %>% flextable_output()
 ```
 
-
-## Transition matrix 
-
-From the treatment table a transition matrix is generated. For the example ATMP treatment, it is given by the table below. The table describes the probability of moving from one state (rows in the table) to a new state in the next period (columns in the table). In the ATMP treatment it is a combination of random start of progression and deterministic progression over 4 years.
-
-```{r, eval=FALSE}
-print_transitions(exampleA, "ATMP")
-```
+Probabilities of progression and dying are based on the assumption that these are independent.  
 
 ## Quality of life
 
@@ -138,7 +131,7 @@ plot_payment_plans(exampleA)
 ```
 
 
-## Structure of Payment schemes
+## Structure of Payment plans
 
 A full list of specifications is given in the table below. 
 
@@ -146,7 +139,7 @@ A full list of specifications is given in the table below.
 exampleA$payment_description %>% select(-name, -min, -max) %>% flextable_output() 
 ```
 
-Payment schemes specify:
+Payment plans specify:
 
 1. Payments over time such as payment length, share of payments as initial payment.
 
@@ -164,7 +157,7 @@ Payment schemes specify:
   
 ## Global variables
 
-In addition to specifying treatments and payment schemes, _global variables_ are also specified in a table. All parameters common to all treatments and payment schemes in the case are specified in the global table. The time horizon of analysis, here 20 years, and discount rate are such common parameters.
+In addition to specifying treatments and payment plans, _global variables_ are also specified in a table. All parameters common to all treatments and payment plans in the case are specified in the global table. The time horizon of analysis, here 20 years, and discount rate are such common parameters.
 
 ```{r}
 exampleA$global_table %>% flextable_output()
@@ -214,3 +207,21 @@ Results of the analysis are displayed in the _Analysis_ tab. Some parameters wil
 ### The Report tab
 
 You can download a report containing the tables and figures displayed on the Model and Analysis pages, in the desired file format.
+
+## Example models
+
+The ATMP app has several example models that can be loaded
+
+- Example A: A basic example with two treatments, each with a payment plan
+
+- Example B: Similar to A, but with payment for comparator treatment if ATMP fails (by entering state 2). Also includes treatment ATMP certain with zero probability of progression.
+
+- Example C: Comparing immediate introduction of ATMP treatment with waiting one period for a lower expected price. The example also has discount rates for the firm and the HA.
+
+- Example D: Similar to A but with a more complicated payment plan. The payment is all in the initial period, but if the treatment fails within 10 periods, there is a refund of 50%. As the Agg. fail limit is set to 30%, the refund will be on all payments if 30% of the treated have reached state 2 within 10 periods. As can be seen in the cost plot on the _Analysis_ page, the refund comes in period 8.
+
+- Example E: The ATMP treatment has a slightly higher quality of life (0.8) than the comparison alternative (0.7). There is no progression for either treatment, but a probability of ATMP ceasing to work as well as a probability of dying.
+
+- Example F: A more complicated comparison of payment plans together with different probabilities of the ATMP treatment ceasing to work.
+
+
