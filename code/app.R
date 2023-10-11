@@ -17,7 +17,7 @@ dt_output = function(title, id) {
   ))
 }
 
-example_list = c("Example A", "Example B", "Example C", "Example D")
+example_list = c("Example A", "Example B", "Example C", "Example D", "Example E")
 
 shinyApp(
   ui = fluidPage(
@@ -113,7 +113,8 @@ shinyApp(
         "Example A" = "Example_A.xlsx",
         "Example B" = "Example_B.xlsx",
         "Example C" = "Example_C.xlsx",
-        "Example D" = "Example_D.xlsx"
+        "Example D" = "Example_D.xlsx",
+        "Example E" = "Example_E.xlsx"
       )
       indata <- open_indata(filenames[[input$example]], vals, indata)
 

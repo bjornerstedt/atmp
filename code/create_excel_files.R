@@ -75,21 +75,35 @@ write_xlsx(models, "Example_A.xlsx")
 
 #
 # -------------- EXAMPLE B ---------------------------
-# Cost saving ATMP
+# Compare payment lengths
 
 models$Treatments = read_csv(show_col_types = FALSE, "
 treatment,    state,    p_prog,   QoL,  p_death, payment
-ATMP,         1,        0.05,      0.8,    0.02,   ATMP
-ATMP,         2,        0.02,     0.7,    0.02,   Comparison
-ATMP,         3,        0,        0.0,    0.00,
-Comparison,   1,        0.02,     0.7,    0.02,   Comparison
-Comparison,   2,        0,        0.0,    0.00,   
+ATMP,         1,        0.04,     1.0,    0.01,   For ATMP tr. 1
+ATMP,         2,        1.00,     0.67,    0.02,   For comparator tr.
+ATMP,         3,        1.00,     0.33,    0.02,   For comparator tr.
+ATMP,         4,        0.00,     0.0,    0.00,
+ATMP 5 yr,    1,        0.04,     1.0,    0.01,   For ATMP tr. 5
+ATMP 5 yr,    2,        1.00,     0.67,    0.02,   For comparator tr.
+ATMP 5 yr,    3,        1.00,     0.33,    0.02,   For comparator tr.
+ATMP 5 yr,    4,        0.00,     0.0,    0.00,
+ATMP 10 yr,   1,        0.04,     1.0,    0.01,   For ATMP tr. 10
+ATMP 10 yr,   2,        1.00,     0.67,    0.02,   For comparator tr.
+ATMP 10 yr,   3,        1.00,     0.33,    0.02,   For comparator tr.
+ATMP 10 yr,   4,        0.00,     0.0,    0.00,
+Comparison,   1,        1.00,     1.0,    0.01,   For comparator tr.
+Comparison,   2,        1.00,     0.67,    0.02,   For comparator tr.
+Comparison,   3,        1.00,     0.33,    0.02,   For comparator tr.
+Comparison,   4,        0.00,     0.0,    0.00,   
 ")
 
+
 models$Payments = read_csv(show_col_types = FALSE, "
-payment,  tot_payment, cont_payment, contract_length, cost_trend
-ATMP,     10,           0,          10,       0.05
-Comparison,0,           0.5,          ,       0.05
+payment,          tot_payment, cont_payment,  contract_length
+For ATMP tr. 1,      15,         0,            1
+For ATMP tr. 5,      15,         0,            5
+For ATMP tr. 10,     15,         0,            10
+For comparator tr., 0,          0.1, 
 ") 
 
 write_xlsx(models, "Example_B.xlsx")
@@ -101,12 +115,13 @@ write_xlsx(models, "Example_B.xlsx")
 models$Treatments = read_csv(show_col_types = FALSE, "
 treatment,    state,    p_prog,   QoL,  p_death, payment
 ATMP,         1,        0.05,     1.0,    0.01,   For ATMP tr.
-ATMP,         2,        1.00,        ,    0.02,   For comparator tr.
-ATMP,         6,        0.00,     0.0,    0.00,
+ATMP,         2,        1.00,     0.67,    0.02,   For comparator tr.
+ATMP,         3,        1.00,     0.33,    0.02,   For comparator tr.
+ATMP,         4,        0.00,     0.0,    0.00,
 ATMP certain, 1,        0.00,     1.0,    0.01,   For ATMP tr.
-ATMP certain, 6,        0.00,     0.0,    0.00,
+ATMP certain, 4,        0.00,     0.0,    0.00,
 Comparison, 1,        1.00,     1.0,    0.02,   For comparator tr.
-Comparison, 6,        0.00,     0.0,    0.00,   
+Comparison, 4,        0.00,     0.0,    0.00,   
 ")
 
 
@@ -144,15 +159,17 @@ write_xlsx(models, "Example_C.xlsx")
 models$Treatments = read_csv(show_col_types = FALSE, "
 treatment,    state,    p_prog,   QoL,  p_death, payment
 ATMP,         1,        0.04,     1.0,    0.01,   For ATMP tr.
-ATMP,         2,        1.00,     ,       0.02,   For comparator tr.
-ATMP,         3,        1.00,     ,       0.02,   For comparator tr.
-ATMP,         6,        0.00,     0.0,    0.00,
-ATMP wait,    1,        1.00,      1.0,    0.02,   For comparator tr.
-ATMP wait,    2,        0.04,         ,    0.01,   For ATMP tr. later
-ATMP wait,    3,        1.00,         ,    0.02,   For comparator tr.
-ATMP wait,    6,        0.00,     0.0,    0.00,
-Comparison,   1,        1.00,     1.0,    0.02,    For comparator tr.
-Comparison,   6,        0.00,     0.0,    0.00,   
+ATMP,         2,        1.00,     0,8,    0.02,   For comparator tr.
+ATMP,         3,        1.00,     0.4,    0.02,   For comparator tr.
+ATMP,         4,        0.00,     0.0,    0.00,
+ATMP wait,    1,        1.00,     1.0,    0.01,   For comparator tr.
+ATMP wait,    2,        0.04,     0.8,    0.01,   For ATMP tr. later
+ATMP wait,    3,        1.00,     0.4,    0.02,   For comparator tr.
+ATMP wait,    4,        0.00,     0.0,    0.00,
+Comparison,   1,        1.00,     1.0,    0.01,    For comparator tr.
+Comparison,   2,        1.00,     0.8,    0.02,    For comparator tr.
+Comparison,   3,        1.00,     0.4,    0.02,    For comparator tr.
+Comparison,   4,        0.00,     0.0,    0.00,   
 ")
 
 models$Payments = read_csv(show_col_types = FALSE, "
@@ -163,3 +180,25 @@ For comparator tr.,       0,        0.5,
 ") 
 
 write_xlsx(models, "Example_D.xlsx")
+
+#
+# -------------- EXAMPLE E ---------------------------
+# Cost saving ATMP
+
+models$Treatments = read_csv(show_col_types = FALSE, "
+treatment,    state,    p_prog,   QoL,  p_death, payment
+ATMP,         1,        0.05,      0.8,    0.02,   ATMP
+ATMP,         2,        0.02,     0.7,    0.02,   Comparison
+ATMP,         3,        0,        0.0,    0.00,
+Comparison,   1,        0.02,     0.7,    0.02,   Comparison
+Comparison,   2,        0,        0.0,    0.00,   
+")
+
+models$Payments = read_csv(show_col_types = FALSE, "
+payment,  tot_payment, cont_payment, contract_length, cost_trend
+ATMP,     10,           0,          10,       0.05
+Comparison,0,           0.5,          ,       0.05
+") 
+
+write_xlsx(models, "Example_E.xlsx")
+

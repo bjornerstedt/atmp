@@ -343,8 +343,11 @@ calculate_costs <- function(state_table_tr, indata, states) {
     mutate(start = pstart) %>%  # TODO: remove start variable
     left_join(indata$payment_table, by = join_by(payment)) %>% 
     mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
-    mutate(payment = replace_na(payment, "Death"))
+    mutate(payment = replace_na(payment, "Death")) %>% 
+    as.list() %>% 
+    modifyList(con_def, .) %>% as_tibble() 
   
+  # Get payment plans for each state
   pay = c()
   for (i in 1:nrow(cons)) {
     con = cons %>% slice(i)  %>% as.list() %>% 
@@ -352,12 +355,65 @@ calculate_costs <- function(state_table_tr, indata, states) {
     pay = c(pay, payment_plan(con, globals))
   }
   pay = matrix(pay, ncol = nrow(cons))
-  pay * states
+  costs = pay * states 
+  
+  paysched = cons %>% 
+    filter(tot_payment > 0) %>% distinct()
+  
+  # TODO: Check elsewhere that only one row has tot payment > 0
+  refund = 0 # refund is set separately for aggregate_failure for other cases 
+  
+  # paysched is empty if all payment plans are continuous
+  if(nrow(paysched) && paysched$aggregate_failure > 0) {
+    initshare = states[paysched$pstart, paysched$pstart]
+    stcols = states[ , paysched$pstart:paysched$pend]
+    if(paysched$pstart < paysched$pend) aggshares = rowSums(stcols) else aggshares = stcols 
+    aggcriterium = initshare - aggshares > paysched$aggregate_failure
+    costs[aggcriterium, paysched$pstart:paysched$pend] = 0
+    
+    repay = rep(0, nrow(states))
+    failuretime = aggcriterium != lag(aggcriterium)
+    repay[failuretime] = sum(costs[!aggcriterium, paysched$pstart:paysched$pend] )
+    refund = - (repay * paysched$refund )
+  }
+  
+  dfcosts = costs %>% 
+    as_tibble() %>% 
+    setNames( 1:ncol(costs)) %>% 
+    mutate(time = row_number()) %>% 
+    pivot_longer(-time, names_to = "start", values_to = "value", names_transform = as.integer) %>% 
+    left_join(state_table_tr %>% select(start, costben = payment), by = join_by(start)) %>% 
+    filter(!is.na(costben)) %>% 
+    group_by(time, costben) %>% 
+    summarise(value = sum(value))
+  
+  if(nrow(paysched) && paysched$refund > 0) {
+    if(paysched$aggregate_failure == 0.0) {
+      # Calculate cumulative costs
+      sccost = paysched %>% as.list() %>% payment_plan(globals)
+      cumcosts = lag(cumsum(sccost))
+      if (paysched$contract_length < globals$time_horizon) {
+        cumcosts[(paysched$contract_length + 1):length(cumcosts)] = 0
+      }
+      cumcosts[1] = 0
+      
+      # Share leaving the last state of payment sched
+      failing = states[, paysched$pend] * P[paysched$pend,  paysched$pend + 1]
+      refund = - (failing * paysched$refund * cumcosts)
+    } 
+    
+    # Add reimbursement for both aggregate_failure and other refund 
+    reimburse = tibble(time = 1:length(cumcosts), costben = "Refund", value = refund)
+    dfcosts = bind_rows(dfcosts, reimburse)
+  }
+  dfcosts
 }
 
-# state_table_tr is 
-analyse_treatment <- function(state_table_tr, indata) {
+# analyse treatment given by identifier treat 
+analyse_treatment <- function(indata, treat) {
   globals = named_list(indata$global_table, "name", "value")
+  state_table_all = create_state_table(indata$state_table) 
+  state_table_tr = state_table_all %>% filter(treatment == treat)
   
   P = transition_matrix(state_table_tr) 
   
@@ -370,36 +426,22 @@ analyse_treatment <- function(state_table_tr, indata) {
   QALY = as.vector( states %*% get_QoL(state_table_tr)) * 
     discounting(globals$discount, globals$time_horizon)
   
-  ret = tibble()
-  # Put into dataset and sum costs over states 
-  costs_df = costs %>% 
-    as_tibble() %>% 
-    setNames( 1:ncol(costs)) %>% 
-    mutate(time = row_number()) %>% 
-    pivot_longer(-time, names_to = "start", values_to = "value", names_transform = as.integer) %>% 
-    left_join(state_table_tr %>% select(start, costben = payment), by = join_by(start)) %>% 
-    filter(!is.na(costben)) %>% 
-    group_by(time, costben) %>% 
-    summarise(value = sum(value))
-  
-  ret = bind_rows(ret,
-                  bind_rows(costs_df, tibble(time = 1:length(QALY), costben = "QALY", value = QALY) ) %>% 
-                    add_column( treatment = state_table_tr$treatment[[1]], .before = 1)
-  )
-  ret
+  bind_rows(
+    costs, 
+    tibble(time = 1:length(QALY), costben = "QALY", value = QALY) 
+  ) %>% 
+    add_column( treatment = state_table_tr$treatment[[1]], .before = 1)
+
 }
 
 analyse_treatments <- function(indata, over_time = FALSE, show_details = FALSE) {
   
-  state_table_all = create_state_table(indata$state_table) 
-  
-  treats = state_table_all %>% distinct(treatment) %>% pull()
+  treats = indata$state_table %>% distinct(treatment) %>% pull()
   ret = tibble()
-  for (i in 1:length(treats)) {
-    state_table_tr = state_table_all %>% filter(treatment == treats[i])
-    # print(analyse_treatment(state_table_tr, indata))
-    ret = bind_rows(ret, analyse_treatment(state_table_tr, indata))
+  for (treat in treats) {
+    ret = bind_rows(ret, analyse_treatment(indata, treat))
   }
+  
   if (!over_time) {
     ret = ret %>% group_by(treatment, costben) %>% 
       summarise(value = sum(value)) %>% 
