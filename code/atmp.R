@@ -78,21 +78,23 @@ plot_treatment_paths <- function(indata, treatment_name, reps = 8, T = 20) {
 }
 
 # Old structure
-# print_transitions <- function(indata, treatment_name) {
-#   ex_treatment = indata$treatment_table %>% 
-#     filter(name == treatment_name) %>% 
-#     pmap(Treatment) %>% 
-#     pluck(1)
-#   P = transition(ex_treatment)
-#   P %>% as_tibble() %>% 
-#     mutate(st = row.names(P)) %>% 
-#     select(st, everything()) %>% 
-#     flextable() %>% 
-#     theme_box() %>% 
-#     bold(j = "st") %>% 
-#     set_header_labels(st = "") %>% 
-#     colformat_double(digits = 2, na_str = " ") 
-# }
+print_transitions <- function(indata, treatment_name) {
+  state_table_tr = 
+    indata$state_table %>% 
+    filter(treatment == treatment_name) %>% 
+    create_state_table() 
+  
+  P = transition_matrix(state_table_tr) 
+  
+  P %>% as_tibble() %>%
+    mutate(st = row.names(P)) %>%
+    select(st, everything()) %>%
+    flextable() %>%
+    theme_box() %>%
+    bold(j = "st") %>%
+    set_header_labels(st = "") %>%
+    colformat_double(digits = 2, na_str = " ")
+}
 
 # Get payments for all payment plans. Used in displaying model inputs
 plot_payment_plans <- function(indata) {

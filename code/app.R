@@ -142,6 +142,7 @@ shinyApp(
     })
     
     output$errors <- renderTable({
+      req(vals$filename )
       req(indata$errors )
       if (nrow(indata$errors)) {
         indata$errors
@@ -149,6 +150,7 @@ shinyApp(
     })
 
     output$input_errors <- renderTable({
+      req(vals$filename )
       vals$errors <- check_indata(vals)
       req(vals$errors )
       if (nrow(vals$errors)) {

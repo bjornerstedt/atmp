@@ -31,7 +31,7 @@ digits = 2
 
 ```{r}
 indata$state_table %>% 
-  with_titles( state_description) %>% 
+  with_titles( indata$state_description) %>% 
   flextable_output() 
 ```
 

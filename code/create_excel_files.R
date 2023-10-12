@@ -168,10 +168,10 @@ write_xlsx(models, "Example_D.xlsx")
 
 models$Treatments = read_csv(show_col_types = FALSE, "
 treatment,    state,    p_prog,   QoL,  p_death, payment
-ATMP,         1,        0.05,      0.8,    0.02,   ATMP
-ATMP,         2,        0.02,     0.7,    0.02,   Comparison
+ATMP,         1,        0.05,     0.8,    0.02,   ATMP
+ATMP,         2,        0,        0.7,    0.02,   Comparison
 ATMP,         3,        0,        0.0,    0.00,
-Comparison,   1,        0.02,     0.7,    0.02,   Comparison
+Comparison,   1,        0,        0.7,    0.02,   Comparison
 Comparison,   2,        0,        0.0,    0.00,   
 ")
 

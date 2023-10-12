@@ -1,5 +1,5 @@
 ---
-title: "ATMP package documentation"
+title: "Simulation of ATMP payment plans"
 always_allow_html: true
 output:
   md_document: default
@@ -80,15 +80,20 @@ exampleA$state_table %>%
 
 For the ATMP treatment, the transition from full health (state 1) to progression (state 2) is random, with a probability of 0.05 of moving to state 2.  Progression once started is deterministic, with probability 1 of moving to the next state, eventually ending in death (state 4). 
 
-Below is the treatment table for two treatments: _ATMP_ and _Comparison_. The only difference between the treatments is in state 1. For the _Comparison_ treatment the comparator drug is used and the probability of transitioning to state 2 is 1. The only difference between the treatments is the column _Pr. Prog_ - the probability of progressing from state 1 to 2.
+Below is the treatment table for two treatments: _ATMP_ and _Comparison_. We have now included a probability of death _Pr.death_. The only difference between the treatments is in state 1. For the _Comparison_ treatment the comparator drug is used and the probability of transitioning to state 2 is 1 as indicated in the column _Pr.prog_.  
  
 
 ```{r}
 exampleA$state_table %>% 
-  select(-p_death) %>% 
   with_titles( exampleA$state_description) %>% 
   flextable_output() %>% 
   colformat_double(j = c(2), digits = 0) 
+```
+
+The transition matrix is given by
+
+```{r}
+  print_transitions(exampleA, treatment_name = "ATMP")
 ```
 
 Treatment tables can include more detailed information. At this time the following variables can be specified in a treatment table. If not specified, the default values in the table below are used (given by the _value_ column). For example the random state does not have to be the first state - we can have delayed treatment where there is progression prior to treatment. A restriction in the current model is that only one random state is allowed (i.e. with _Pr. prog_ between zero and one).
@@ -200,7 +205,7 @@ Once loaded, the page will display figures of quality of life and payment plans 
 
 Once loaded, values can be modified under the _Input_ tab. Simply double click on a value to change it, clicking somewhere else once you have entered a new value. The model tables displayed on the _Input_ page can be downloaded as an Excel file to your computer using the _Download_ button at the bottom of the _Input_ page.
 
-### The Input tab
+### The Analysis tab
 
 Results of the analysis are displayed in the _Analysis_ tab. Some parameters will also affect the plots on the _Model_ page.
 
@@ -212,16 +217,41 @@ You can download a report containing the tables and figures displayed on the Mod
 
 The ATMP app has several example models that can be loaded
 
-- Example A: A basic example with two treatments, each with a payment plan
+__Example A__ A basic example with two treatments, each with a payment plan
 
-- Example B: Similar to A, but with payment for comparator treatment if ATMP fails (by entering state 2). Also includes treatment ATMP certain with zero probability of progression.
+__Example B__ Similar to A, but with payment for comparator treatment if ATMP fails (by entering state 2). Also includes treatment ATMP certain with zero probability of progression.
 
-- Example C: Comparing immediate introduction of ATMP treatment with waiting one period for a lower expected price. The example also has discount rates for the firm and the HA.
+__Example C__ Comparing immediate introduction of ATMP treatment with waiting one period for a lower expected price. The example also has discount rates for the firm and the HA.
 
-- Example D: Similar to A but with a more complicated payment plan. The payment is all in the initial period, but if the treatment fails within 10 periods, there is a refund of 50%. As the Agg. fail limit is set to 30%, the refund will be on all payments if 30% of the treated have reached state 2 within 10 periods. As can be seen in the cost plot on the _Analysis_ page, the refund comes in period 8.
+__Example D__ Similar to A but with a more complicated payment plan. The payment is all in the initial period, but if the treatment fails within 10 periods, there is a refund of 50%. As the Agg. fail limit is set to 30%, the refund will be on all payments if 30% of the treated have reached state 2 within 10 periods. As can be seen in the cost plot on the _Analysis_ page, the refund comes in period 8.
 
-- Example E: The ATMP treatment has a slightly higher quality of life (0.8) than the comparison alternative (0.7). There is no progression for either treatment, but a probability of ATMP ceasing to work as well as a probability of dying.
+__Example E__ The ATMP treatment has a slightly higher quality of life (0.8) than the comparison alternative (0.7). There is no progression for either treatment, but a probability of ATMP ceasing to work as well as a probability of dying.
 
-- Example F: A more complicated comparison of payment plans together with different probabilities of the ATMP treatment ceasing to work.
+__Example F__ A more complicated comparison of payment plans together with different probabilities of the ATMP treatment ceasing to work.
 
+These examples can be used as a starting point in creating your own model. 
+
+## ATMP package function interface
+
+To read the data from the Excel indata file, the function `open_indata()` is used. It takes the filename as an argument and returns a structure with the tables described above. Here this structure is put in the variable `indata`.
+
+```{r, eval=FALSE, echo=TRUE}
+indata = open_indata("models.xlsx")
+```
+
+The main function `analyse_treatments()` generates a data.frame of QALYs for each treatment and Costs for each payment scheme associated with the treatment. The tables shown on the _Analysis_ page can be generated by the following function calls
+
+```{r, eval=FALSE, echo=TRUE}
+analyse_treatments(indata) 
+
+analyse_treatments(indata, show_details = TRUE)
+```
+
+The results of the analysis is returned in a dataframe, to be displayed as a table or for further analysis. To study the treatments over time the corresponding option is used
+
+```{r, eval=FALSE, echo=TRUE}
+df = analyse_treatments(indata, over_time = TRUE)
+```
+
+The `df` object returned by the function is a data frame that can be analysed using standard tools in R.
 
