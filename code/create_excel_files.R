@@ -130,7 +130,7 @@ For comparator tr.,       0,        0.5,
 models$Globals = read_csv(show_col_types = FALSE, "
 name, value
 discount, 0.03
-firm_discount, 0.03
+firm_discount, 0.1
 time_horizon, 20
 control_count, 1
 "
@@ -145,11 +145,11 @@ write_xlsx(models, "Example_C.xlsx")
 models$Treatments = read_csv(show_col_types = FALSE, "
 treatment,    state,    p_prog,   QoL,  p_death, payment
 ATMP,         1,        0.04,     1.0,    0.01,   For ATMP tr.
-ATMP,         2,        1.00,     0.8,    0.02,   For comparator tr.
+ATMP,         2,        1.00,     0.9,    0.02,   For comparator tr.
 ATMP,         3,        1.00,     0.4,    0.02,   For comparator tr.
 ATMP,         4,        0.00,     0.0,    0.00,
 Comparison,   1,        1.00,     1.0,    0.01,    For comparator tr.
-Comparison,   2,        1.00,     0.8,    0.02,    For comparator tr.
+Comparison,   2,        1.00,     0.9,    0.02,    For comparator tr.
 Comparison,   3,        1.00,     0.4,    0.02,    For comparator tr.
 Comparison,   4,        0.00,     0.0,    0.00,   
 ")
@@ -214,7 +214,6 @@ Comparison,   4,        0.00,     0.0,     0.00,
 models$Payments = read_csv(show_col_types = FALSE, "
 payment,          tot_payment, cont_payment,  contract_length
 For ATMP tr. 1,      10,         0,            1
-For ATMP tr. 5,      10,         0,            5
 For ATMP tr. 10,     10,         0,            10
 For comparator tr., 0,          0.1, 
 ") 

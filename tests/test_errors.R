@@ -45,6 +45,14 @@ For ATMP tr. ,      10,         0,        1000
 For comparator tr., 0,          0.5, 
 ") 
 
+# Check for unmatched keys
+# 
+# table = "contracts",
+# row = row_number(), 
+# column = "end, health_states",
+# message = 
+  
+
 table_name = 'state'
 check_min_max <- function(indata, table_name) {
   table = indata[[str_c(table_name, '_table')]] 

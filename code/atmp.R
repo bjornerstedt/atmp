@@ -23,11 +23,25 @@ check_min_max <- function(indata, table_name) {
     select(table, column = title, row, message)
 }
 
+find_unmatched_payments <- function(indata, table_name1, table_name2) {
+  indata[[table_name1]] %>% mutate(row = row_number()) %>% 
+    filter(!is.na(payment)) %>%
+    anti_join((indata[[table_name2]]), by = "payment") %>% 
+    transmute(
+      table = table_name1,
+      row = row, 
+      column = "payment",
+      message = str_c("The payment plan: '", payment, "' cannot be found in: ", table_name2)
+    )
+}
+
 check_indata <- function(indata) {
   
   errors = bind_rows(
     check_min_max(indata, 'state'),
-    check_min_max(indata, 'payment')
+    check_min_max(indata, 'payment'),
+    find_unmatched_payments(indata, "state_table", "payment_table") ,
+    find_unmatched_payments(indata, "payment_table", "state_table") 
   )
   errors
 }
@@ -52,7 +66,6 @@ get_titles <- function(df, df_desc) {
 plot_QoL <- function(indata) {
   indata$state_table %>% 
     create_state_table() %>% 
-    select(treatment, state=start, QoL) %>% 
     ggplot() +
     aes(state, QoL) + 
     geom_col(fill = lightblue) + 
@@ -291,25 +304,24 @@ payment_plan <- function(con, globals) {
 
 # New functions --------------
 # 
-
-
+# 
 create_state_table = function(indata) {
   indata  %>% group_by(treatment) %>% 
     mutate(QoLstate = pmax(state, QoL), QoLnext = replace_na(lead(QoL), 0)) %>% fill(QoLstate) %>%  # Get QoLstate
     mutate(periods = replace_na(lead(state) - state, 1)) %>% 
     fill(QoL) %>% 
     uncount(periods) %>% 
-    mutate(start = row_number()) %>% 
+    mutate(state = row_number()) %>% 
     group_by(treatment, QoLstate) %>% 
     mutate(QoL = QoL - (QoL - QoLnext)*(row_number() - 1 )/n() ) %>% 
     group_by(payment) %>%
-    mutate(pstart = min(start), pend = max(start) ) %>%
+    mutate(pstart = min(state), pend = max(state) ) %>%
     ungroup() %>% 
     select(-QoLstate, -QoLnext)
 }
 
 transition_matrix <- function(state_table) {
-  health_states = max(state_table$start)
+  health_states = max(state_table$state)
   P = matrix(0.0, health_states, health_states)
   # P = matrix(0.0, as.integer( health_states), as.integer( health_states))
   for (i in 1:(health_states-1)) {
@@ -347,12 +359,15 @@ calculate_costs <- function(state_table_tr, indata, states) {
     mutate_if(is.numeric, list(~replace_na(., 0))) %>% 
     mutate(payment = replace_na(payment, "Death")) %>% 
     as.list() %>% 
-    modifyList(con_def, .) %>% as_tibble() 
+    modifyList(con_def, .) %>% 
+    as_tibble() 
   
   # Get payment plans for each state
   pay = c()
   for (i in 1:nrow(cons)) {
-    con = cons %>% slice(i)  %>% as.list() %>% 
+    con = cons %>% 
+      slice(i)  %>% 
+      as.list() %>% 
       modifyList(con_def, .)
     pay = c(pay, payment_plan(con, globals))
   }
@@ -360,7 +375,8 @@ calculate_costs <- function(state_table_tr, indata, states) {
   costs = pay * states 
   
   paysched = cons %>% 
-    filter(tot_payment > 0) %>% distinct()
+    filter(tot_payment > 0) %>% 
+    distinct()
   
   # TODO: Check elsewhere that only one row has tot payment > 0
   refund = 0 # refund is set separately for aggregate_failure for other cases 
@@ -383,8 +399,11 @@ calculate_costs <- function(state_table_tr, indata, states) {
     as_tibble() %>% 
     setNames( 1:ncol(costs)) %>% 
     mutate(time = row_number()) %>% 
-    pivot_longer(-time, names_to = "start", values_to = "value", names_transform = as.integer) %>% 
-    left_join(state_table_tr %>% select(start, costben = payment), by = join_by(start)) %>% 
+    pivot_longer(-time, names_to = "state", values_to = "value", names_transform = as.integer) %>% 
+    left_join(
+      state_table_tr %>% 
+        select(state, costben = payment),
+      by = join_by(state)) %>% 
     filter(!is.na(costben)) %>% 
     group_by(time, costben) %>% 
     summarise(value = sum(value))
@@ -392,12 +411,15 @@ calculate_costs <- function(state_table_tr, indata, states) {
   if(nrow(paysched) && paysched$refund > 0) {
     if(paysched$aggregate_failure == 0.0) {
       # Calculate cumulative costs
-      sccost = paysched %>% as.list() %>% payment_plan(globals)
+      sccost = paysched %>% 
+        as.list() %>% 
+        payment_plan(globals)
       cumcosts = lag(cumsum(sccost))
       if (paysched$contract_length < globals$time_horizon) {
         cumcosts[(paysched$contract_length + 1):length(cumcosts)] = 0
       }
       cumcosts[1] = 0
+      P = transition_matrix(state_table_tr) 
       
       # Share leaving the last state of payment sched
       failing = states[, paysched$pend] * P[paysched$pend,  paysched$pend + 1]
@@ -405,7 +427,7 @@ calculate_costs <- function(state_table_tr, indata, states) {
     } 
     
     # Add reimbursement for both aggregate_failure and other refund 
-    reimburse = tibble(time = 1:length(cumcosts), costben = "Refund", value = refund)
+    reimburse = tibble(time = 1:length(refund), costben = "Refund", value = refund)
     dfcosts = bind_rows(dfcosts, reimburse)
   }
   dfcosts
