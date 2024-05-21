@@ -1,0 +1,154 @@
+---
+title: "Untitled"
+author: "Jonas Björnerstedt"
+date: '`r Sys.Date()`'
+output:
+  slidy_presentation: default
+  powerpoint_presentation: default
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(knitr)
+library(shiny)
+library(kableExtra)
+library(flextable)
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(dplyr.summarise.inform = FALSE)
+options(knitr.kable.NA = '') # Suppress printing of NA in kable
+# Standard theme for document 
+theme_set(theme_bw()) 
+
+set_flextable_defaults(
+align = "center",
+digits = 2
+# theme_fun = theme_zebra
+  )
+
+doShiny = TRUE
+
+source("code/atmp.R")
+# source("create_settings.R")
+
+# Läs in från Excel
+# example_simple = open_indata("Simple.xlsx")
+exampleA = open_indata("code/Example_A.xlsx")
+exampleB = open_indata("code/Example_B.xlsx")
+# exampleA2 = open_indata("Example_A2.xlsx")
+```
+
+## A simple example
+
+```{r}
+exampleA$state_table %>% 
+  # select( -p_death) %>% 
+  filter(treatment == "ATMP") %>% 
+  with_titles( exampleA$state_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(2), digits = 0) 
+```
+
+
+```{r}
+library('diagram')
+
+Numgenerations <- 4
+DiffMat <- matrix(data = 0, nrow = Numgenerations, ncol = Numgenerations)
+AA <- as.data.frame(DiffMat)
+AA[[4,1]] <- ".01  "
+AA[[4,2]] <- ".02"
+AA[[4,3]] <- ".02"
+#
+AA[[1,1]] <- "0.95"
+AA[[2,1]] <- "0.04"
+AA[[3,2]] <- "0.98"
+# AA[[4,3]] <- "0.98 + 0.02"
+AA[[4,3]] <- "1.00"
+#
+name <- c("H","Pr. 1","Pr. 2", "D")
+#
+plotmat(A = AA, pos = c(3,1), name = name, lwd = 2, self.lwd = 2, arr.len = 0.2, relsize = .7, arr.width = 0.1, my = 0.29, box.size = 0.09, arr.type = "triangle", dtext = 0.1)
+```
+
+## Transition matrix
+
+```{r}
+  print_transitions(exampleA, treatment_name = "ATMP")
+```
+
+## Two treatments, one with certain progression
+
+```{r}
+exampleA$state_table %>% 
+  with_titles( exampleA$state_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(2), digits = 0) 
+```
+
+
+## Payment plans
+
+Two simple __Payment plans__
+
+* _For ATMP tr._ - total payment of 15 spread over 10 periods
+
+* _For comparator tr._ - continuous payment of 0.1 in all periods
+
+```{r, message=FALSE}
+exampleA$payment_table %>% 
+    with_titles( exampleA$payment_description) %>% 
+  flextable_output() %>% 
+  colformat_double(j = c(4), digits = 0) 
+```
+
+## Structure of Payment plans
+
+* Available specifications with default values
+
+```{r, message=FALSE}
+exampleA$payment_description %>% select(-name, -min, -max) %>% flextable_output() 
+```
+
+## Global variables
+
+```{r}
+exampleA$global_table %>% slice(1:3)  %>% flextable_output()
+```
+
+# Examples
+
+## __Example A__ 
+
+A basic example with two treatments, each with a payment plan
+
+## __Example B__ 
+
+* Similar to A, but with payment for comparator treatment if ATMP fails (by entering state 2). 
+
+* Also includes treatment ATMP certain with zero probability of progression.
+
+## __Example C__ 
+
+* Comparing immediate introduction of ATMP treatment with waiting one period for a lower expected price. 
+
+* The example also has discount rates for the firm and the HA.
+
+## __Example D__ 
+
+* Similar to A but with a more complicated payment plan. 
+* The payment is all in the initial period, but if the treatment fails within 10 periods, there is a refund of 50%. 
+* As the Agg. fail limit is set to 30%, the refund will be on all payments if 30% of the treated have reached state 2 within 10 periods. 
+
+* As can be seen in the cost plot on the _Analysis_ page, the refund comes in period 8.
+
+## __Example E__ 
+
+* The ATMP treatment has a slightly higher quality of life (0.8) than the comparison alternative (0.7). 
+
+* There is no progression for either treatment, but a probability of ATMP ceasing to work as well as a probability of dying.
+
+## __Example F__ 
+
+* A more complicated comparison of payment plans together with different probabilities of the ATMP treatment ceasing to work.

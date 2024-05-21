@@ -20,15 +20,57 @@ dt_output = function(title, id) {
 example_list = c("Example A", "Example B", "Example C", "Example D", "Example E", "Example F")
 
 shinyApp(
+  
   ui = fluidPage(
-    tags$head(
-      tags$style(HTML(
-        ".tabbable ul li:nth-child(6) { float: right; }"
-      ))
+    
+    tags$style(HTML("
+
+      .navbar-default .navbar-brand {color: white;}
+
+      .navbar-default .navbar-brand:hover {color: white;}
+
+      .navbar { background-color: #0087A9;}
+
+      .navbar-default .navbar-nav > li > a {color:white;}
+
+      .navbar-default .navbar-nav > .active > a,
+
+      .navbar-default .navbar-nav > .active > a:focus,
+
+      .navbar-default .navbar-nav > .active > a:hover {color: white; background-color: #007799;}
+
+      .navbar-default .navbar-nav > li > a:hover {color: white; background-color :#0097B9;}
+
+      ")),
+    
+    div(style="padding: 1px 0px; width: '100%'",
+        
+        titlePanel(
+          
+          title="", windowTitle="ATMP model"
+          
+        )
+        
     ),
-    tabsetPanel(
-      id = "tabset",
+    
+    navbarPage(
+      
+      div(
+        
+        a(href="", style="text-decoration : none",
+          
+          img(src="nedladdning.png")
+          
+        ),
+        
+      ),
+      
+      # tabsetPanel(
+      
+      #   id = "tabset",
+      
       tabPanel("Overview", includeMarkdown("overview.md")
+               
       ),
       tabPanel("Model",
         h3('Model'),

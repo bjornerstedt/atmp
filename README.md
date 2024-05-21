@@ -2,44 +2,62 @@
 
 ## TODO:
 
-* Interpretation of replication of random state
+* Företaget måste kompenseras för dödsfall vid framtida betalning. Gör real beräkning optional.
 
-* Skapa tester
+* Integrera komparatativ statik
 
-* How should probabilities be defined?
+* Multipla betalningar: sjukhuskostnader, betalning till ATMP fortsätter trots att annan behandling påbörjas 
 
-  * Life table - Omit p_death and it is set with real hazard
+* Döp om state -> treatment etc i kod
+
+* Globals använder inte default values om de saknas
+
+* pstart och pend bör korrigeras för kont behandling, döp om till start och end
+
+* Skapa tester:
+
+  * Bättre felkoll - tänk igenom
+  
+  * state måste öka, om inte specificerat på intervall måste nästa värde vara stort nog för att tillåta numrering
+
+  * Allow only 1 random state
+  
+* Life table - Omit p_death and it is set with real hazard
 
 * state_table
 
-  * If state is omitted, it is set to the next value. Useful for example 3 and for omitting state completely.
+  * Interpretation of replication of random state
+
+  * If state is omitted, it is set to the previous row + 1. Useful for example 3 and for omitting state completely.
   
   * generate QoL if it is omitted
   
-  * Allow only 1 random state
-  
-  * Check joins
-  
   * Två eller flera payments genom kommaseparering. (De gäller för alla perioder som tabellen specificerar, med periods anges hur betalning sker.)
 
-* Döp om variabler: contract
-
-* Döp om tabeller i indata.
-
+* Betalning i death state?
+  
 * Hjälptext
 
-* Inputkoll: 
-
-    * Sannolikheter måste summera till 1
-    
 * Visa genererad rapport i appen.
-
-* lägg till armval i globals: control_states = 2
 
 * Separera fältbeskrivningar från data
 
-## Genomfört -------------------------------------------------------------
+## Genomfört --------------------------------------------------------------------------------------
 
+* Navbar och logga
+
+* Döp om variabler: contract
+
+* Sannolikheter måste summera till 1
+    
+* How should probabilities be defined?
+
+* Döp om tabeller i indata.
+
+* lägg till armval i globals: control_states = 2
+
+  * Check joins
+  
 * Lägg till nedladdning av rapport till ATMP app, med indata som parameter
 
 * Kalla arm new old

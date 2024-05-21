@@ -160,6 +160,8 @@ Payment plans specify:
 
   - Ex. If ATMP stops working, the cost of an alternative treatment can be included. 
   
+4. If Tot.payment is specified, continuous payment is not used. The payment is distributed over the Periods. An initial payment can be set, specifed as a percentage of the total payment.
+
 ## Global variables
 
 In addition to specifying treatments and payment plans, _global variables_ are also specified in a table. All parameters common to all treatments and payment plans in the case are specified in the global table. The time horizon of analysis, here 20 years, and discount rate are such common parameters.
